@@ -36,9 +36,15 @@ class Game {
     constructor() {
         this.container = document.getElementById('game-container');
         this.posDisplay = document.getElementById('pos');
+        this.fpsDisplay = document.getElementById('fps');
         this.map = [];
         this.rooms = [];
         this.player = { x: 0, y: 0 };
+
+        // FPS Tracking
+        this.lastTime = performance.now();
+        this.frames = 0;
+        this.fps = 0;
 
         this.init();
     }
@@ -47,6 +53,28 @@ class Game {
         this.generateLevel();
         this.setupEventListeners();
         this.render();
+
+        // Initial camera position
+        setTimeout(() => this.updateCamera(true), 100);
+
+        // Start FPS loop
+        this.loop();
+    }
+
+    loop() {
+        this.updateFPS();
+        requestAnimationFrame(() => this.loop());
+    }
+
+    updateFPS() {
+        const now = performance.now();
+        this.frames++;
+        if (now >= this.lastTime + 1000) {
+            this.fps = Math.round((this.frames * 1000) / (now - this.lastTime));
+            this.fpsDisplay.innerText = this.fps;
+            this.frames = 0;
+            this.lastTime = now;
+        }
     }
 
     generateLevel() {
@@ -129,7 +157,9 @@ class Game {
             this.movePlayer(dx, dy);
         });
 
-        window.addEventListener('resize', () => this.render());
+        window.addEventListener('resize', () => {
+            this.updateCamera(true);
+        });
     }
 
     movePlayer(dx, dy) {
@@ -139,7 +169,40 @@ class Game {
             this.player.x = newX;
             this.player.y = newY;
             this.render();
+            this.updateCamera();
         }
+    }
+
+    updateCamera(instant = false) {
+        // Measure character dimensions
+        const charMeasure = document.createElement('span');
+        charMeasure.style.fontFamily = 'var(--font-family)';
+        charMeasure.style.fontSize = '2.5rem';
+        charMeasure.style.lineHeight = '1.1';
+        charMeasure.style.position = 'absolute';
+        charMeasure.style.visibility = 'hidden';
+        charMeasure.innerText = '#';
+        document.body.appendChild(charMeasure);
+
+        const charW = charMeasure.offsetWidth;
+        const charH = charMeasure.offsetHeight;
+        document.body.removeChild(charMeasure);
+
+        // Calculate center of screen
+        const viewportW = window.innerWidth;
+        const viewportH = window.innerHeight;
+
+        // Target pixel position to center the player
+        const targetX = (viewportW / 2) - (this.player.x * charW) - (charW / 2);
+        const targetY = (viewportH / 2) - (this.player.y * charH) - (charH / 2);
+
+        if (instant) {
+            this.container.style.transition = 'none';
+        } else {
+            this.container.style.transition = 'transform 0.15s ease-out';
+        }
+
+        this.container.style.transform = `translate(${targetX}px, ${targetY}px)`;
     }
 
     isWalkable(x, y) {
