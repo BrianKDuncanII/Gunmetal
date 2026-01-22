@@ -1,0 +1,2 @@
+1. Rockets fired from the rocket launcher should damage the player if they are too close to the impact point.
+2. Melee enemies can't damage the player.

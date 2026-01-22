@@ -14,10 +14,11 @@ export class DamageText {
      * @param {number} damage - Damage amount to display
      * @param {number} charW - Character width in pixels
      * @param {number} charH - Character height in pixels
+     * @param {boolean} isPlayerDamage - If true, use player damage styling (damage received)
      */
-    spawn(x, y, damage, charW, charH) {
+    spawn(x, y, damage, charW, charH, isPlayerDamage = false) {
         const textEl = document.createElement('div');
-        textEl.className = 'damage-text';
+        textEl.className = isPlayerDamage ? 'damage-text player-damage' : 'damage-text';
         textEl.innerText = `-${damage}`;
 
         // Position at tile location

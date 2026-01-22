@@ -5,6 +5,7 @@ import { Inventory } from './systems/inventory.js';
 import { Enemy } from './systems/enemy.js';
 import { DamageText } from './systems/damage-text.js';
 import { Experience } from './systems/experience.js';
+import { Pathfinding } from './systems/pathfinding.js';
 
 class Game {
     constructor() {
@@ -15,16 +16,27 @@ class Game {
         this.renderer = new Renderer(this.container, this.posDisplay);
         this.levelGenerator = new LevelGenerator();
         this.inventory = new Inventory();
+        this.inventory.onEquip = (weapon) => {
+            console.log("Equipping from inventory:", weapon.NAME);
+            this.equipWeapon(weapon);
+        };
         this.damageText = new DamageText(this.container);
         this.experience = new Experience();
 
         this.map = [];
         this.rooms = [];
-        this.player = { x: 0, y: 0 };
+        this.player = { x: 0, y: 0, hp: CONFIG.PLAYER.START_HP, maxHp: CONFIG.PLAYER.MAX_HP };
         this.aiming = false;
         this.reticle = { x: 0, y: 0 };
+        this.gameOver = false;
+        this.hpDisplay = document.getElementById('hp');
 
-        this.inventory.addItem({ name: 'Pistol', damage: 1 });
+        // Weapon system
+        this.activeWeapon = CONFIG.WEAPON.PISTOL;
+        this.currentMagazine = this.activeWeapon.MAGAZINE_SIZE;
+
+        // Add starting weapon
+        this.inventory.addItem({ ...this.activeWeapon, type: 'weapon' });
 
         this.explored = new Set();
         this.visible = new Set();
@@ -32,6 +44,9 @@ class Game {
         this.enemyMap = new Map();
         this.pickups = [];
         this.pickupMap = new Map();
+
+        // Visual effects queue
+        this.pendingTracers = [];
 
         // FPS Tracking
         this.lastTime = performance.now();
@@ -49,7 +64,14 @@ class Game {
         const level = this.levelGenerator.generate();
         this.map = level.map;
         this.rooms = level.rooms;
-        this.player = { x: level.playerStart.x, y: level.playerStart.y };
+        this.player = {
+            x: level.playerStart.x,
+            y: level.playerStart.y,
+            hp: CONFIG.PLAYER.START_HP,
+            maxHp: CONFIG.PLAYER.MAX_HP
+        };
+        this.gameOver = false;
+        this.hideGameOver();
 
         // Initialize Enemies
         this.enemies = level.enemies.map(e => new Enemy(e.x, e.y, e.type));
@@ -74,6 +96,8 @@ class Game {
         // Initial camera position
         setTimeout(() => this.renderer.updateCamera(this.player, true), 100);
 
+        // Update ammo display
+        this.updateAmmoDisplay();
     }
 
     loop() {
@@ -94,6 +118,9 @@ class Game {
 
     setupEventListeners() {
         window.addEventListener('keydown', (e) => {
+            // Block all input during game over
+            if (this.gameOver) return;
+
             // Allow closing inventory with I key, but block other actions when open
             if (e.key === 'i' || e.key === 'I') {
                 this.inventory.toggle();
@@ -117,6 +144,10 @@ class Game {
                 case 'g':
                 case 'G':
                     this.tryPickup();
+                    return;
+                case 'r':
+                case 'R':
+                    this.reload();
                     return;
                 default: return;
             }
@@ -175,16 +206,118 @@ class Game {
         const pickup = this.pickupMap.get(pickupKey);
 
         if (pickup) {
-            this.inventory.addAmmo(pickup.type, pickup.amount);
-            console.log(`Picked up ${pickup.amount} ${pickup.type} ammo!`);
+            if (pickup.type === 'weapon') {
+                this.inventory.addItem(pickup);
+                console.log(`Picked up ${pickup.NAME}!`);
+
+                // Optional: Auto-equip if better? For now just add to inventory.
+                // Or maybe we should equip it to test it? Let's equip it.
+                this.equipWeapon(pickup);
+
+                this.showActionText(`Got ${pickup.NAME}!`, this.player.x, this.player.y);
+            } else {
+                this.inventory.addAmmo(pickup.ammoType, pickup.amount);
+                console.log(`Picked up ${pickup.amount} ${pickup.ammoType} ammo!`);
+                this.showActionText(`+${pickup.amount} ${pickup.ammoType}`, this.player.x, this.player.y);
+            }
             this.pickupMap.delete(pickupKey);
             const idx = this.pickups.indexOf(pickup);
             if (idx > -1) this.pickups.splice(idx, 1);
 
             this.renderer.fullRender(this.player, this.visible, this.explored, null, this.enemyMap, this.pickupMap);
+            this.updateAmmoDisplay();
         } else {
             console.log("Nothing to pick up here.");
         }
+    }
+
+    /**
+     * Equip a new weapon
+     */
+    equipWeapon(weapon) {
+        this.activeWeapon = weapon;
+        this.currentMagazine = weapon.MAGAZINE_SIZE;
+        // If picking up a weapon, start full? Or separate mechanic. For now start full.
+        this.updateAmmoDisplay();
+    }
+
+    /**
+     * Reload the current weapon from reserve ammo
+     */
+    reload() {
+        if (!this.activeWeapon.MAGAZINE_SIZE) return; // No magazine (melee)
+
+        // Already full?
+        if (this.currentMagazine >= this.activeWeapon.MAGAZINE_SIZE) {
+            console.log("Magazine already full!");
+            return;
+        }
+
+        // Calculate how many rounds we need
+        const roundsNeeded = this.activeWeapon.MAGAZINE_SIZE - this.currentMagazine;
+        const ammoType = this.activeWeapon.AMMO_TYPE;
+        const reserveAmmo = this.inventory.getAmmo(ammoType);
+
+        if (reserveAmmo <= 0) {
+            console.log("No reserve ammo!");
+            this.showActionText("NO AMMO!", this.player.x, this.player.y);
+            return;
+        }
+
+        // Take what we can get
+        const roundsToLoad = Math.min(roundsNeeded, reserveAmmo);
+
+        // Consume from reserve
+        this.inventory.useAmmo(ammoType, roundsToLoad);
+
+        // Add to magazine
+        this.currentMagazine += roundsToLoad;
+
+        console.log(`Reloaded ${roundsToLoad} rounds! Magazine: ${this.currentMagazine}/${this.activeWeapon.MAGAZINE_SIZE}`);
+
+        // Show floating "Reload!" text
+        this.showActionText("Reload!", this.player.x, this.player.y);
+
+        // Update ammo display
+        this.updateAmmoDisplay();
+
+        // Reloading takes a turn!
+        this.processTurn();
+    }
+
+    /**
+     * Update the ammo display to show magazine / reserve
+     */
+    updateAmmoDisplay() {
+        const ammoDisplay = document.getElementById('ammo-display');
+        if (ammoDisplay) {
+            if (this.activeWeapon.AMMO_TYPE) {
+                const reserve = this.inventory.getAmmo(this.activeWeapon.AMMO_TYPE);
+                ammoDisplay.innerText = `${this.activeWeapon.NAME}: ${this.currentMagazine}/${reserve}`;
+            } else {
+                ammoDisplay.innerText = `${this.activeWeapon.NAME}: -/-`;
+            }
+        }
+    }
+
+    /**
+     * Show floating action text (like "Reload!") at a position
+     */
+    showActionText(text, x, y) {
+        const textEl = document.createElement('div');
+        textEl.className = 'action-text';
+        textEl.innerText = text;
+
+        // Position at tile location
+        textEl.style.left = `${x * this.renderer.charW + this.renderer.charW / 2}px`;
+        textEl.style.top = `${y * this.renderer.charH}px`;
+
+        this.container.appendChild(textEl);
+
+        // Remove after animation
+        setTimeout(() => {
+            textEl.remove();
+        }, 1000);
     }
 
     // Called after each player action (turn-based)
@@ -194,20 +327,39 @@ class Game {
 
     updateEnemies() {
         this.enemies.forEach(enemy => {
-            if (!enemy.alive) return; // Skip dead enemies
+            if (!enemy.alive || this.gameOver) return; // Skip dead enemies or if game over
 
             const dist = Math.abs(enemy.x - this.player.x) + Math.abs(enemy.y - this.player.y);
             if (dist < 8) enemy.alerted = true; // Wake up if close
+
+            // Ranged enemies: Try to attack from distance first
+            if (enemy.type === CONFIG.TILE.ENEMY_RANGED && enemy.alerted) {
+                if (dist <= CONFIG.ENEMY.RANGED_ATTACK_RANGE && dist > 1) {
+                    // Check line of sight
+                    if (this.hasLineOfSight(enemy.x, enemy.y, this.player.x, this.player.y)) {
+                        // Chance to shoot
+                        if (Math.random() < CONFIG.ENEMY.RANGED_ATTACK_CHANCE) {
+                            this.enemyRangedAttack(enemy);
+                            return; // End turn after shooting
+                        }
+                    }
+                }
+            }
 
             let dx = 0;
             let dy = 0;
 
             if (enemy.alerted) {
-                // Chase player when alerted
-                if (Math.abs(this.player.x - enemy.x) > Math.abs(this.player.y - enemy.y)) {
-                    dx = (this.player.x > enemy.x) ? 1 : -1;
-                } else {
-                    dy = (this.player.y > enemy.y) ? 1 : -1;
+                // Use A* pathfinding to navigate toward player
+                const nextStep = Pathfinding.getNextStep(
+                    enemy.x, enemy.y,
+                    this.player.x, this.player.y,
+                    this.map, this.enemyMap
+                );
+
+                if (nextStep) {
+                    dx = nextStep.dx;
+                    dy = nextStep.dy;
                 }
             } else {
                 // Wander randomly when not alerted
@@ -230,6 +382,12 @@ class Game {
                 const nx = enemy.x + dx;
                 const ny = enemy.y + dy;
 
+                // Check if trying to move into player (melee attack)
+                if (nx === this.player.x && ny === this.player.y && enemy.alerted) {
+                    this.enemyMeleeAttack(enemy);
+                    return;
+                }
+
                 // Check for valid move
                 if (this.isWalkable(nx, ny) && !(nx === this.player.x && ny === this.player.y)) {
                     // Check no other enemy at target position
@@ -240,17 +398,150 @@ class Game {
                         enemy.x = nx;
                         enemy.y = ny;
                         this.enemyMap.set(targetKey, enemy);
-                        needsRender = true;
                     }
-                } else if (nx === this.player.x && ny === this.player.y && enemy.alerted) {
-                    console.log("Player hit by enemy!");
-                    // TODO: Player Take Damage
                 }
             }
         });
 
         // Always re-render after enemy turn
         this.renderer.fullRender(this.player, this.visible, this.explored, this.aiming ? this.reticle : null, this.enemyMap, this.pickupMap);
+    }
+
+    /**
+     * Check if there is clear line of sight between two points
+     */
+    hasLineOfSight(x0, y0, x1, y1) {
+        const path = this.getLine(x0, y0, x1, y1);
+        // Skip first (enemy) and last (player) positions
+        for (let i = 1; i < path.length - 1; i++) {
+            const p = path[i];
+            if (this.map[p.y][p.x] === CONFIG.TILE.WALL) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Enemy performs a melee attack on the player
+     */
+    enemyMeleeAttack(enemy) {
+        const damage = CONFIG.ENEMY.MELEE_DAMAGE;
+        console.log(`Melee enemy attacks for ${damage} damage!`);
+        this.playerTakeDamage(damage, enemy.x, enemy.y);
+    }
+
+    /**
+     * Enemy performs a ranged attack on the player
+     */
+    enemyRangedAttack(enemy) {
+        const damage = CONFIG.ENEMY.RANGED_DAMAGE;
+        console.log(`Ranged enemy shoots for ${damage} damage!`);
+        this.playerTakeDamage(damage, enemy.x, enemy.y);
+    }
+
+    /**
+     * Player takes damage from an enemy
+     */
+    playerTakeDamage(amount, sourceX, sourceY) {
+        this.player.hp -= amount;
+
+        // Spawn floating damage text at player position (with player damage styling)
+        this.damageText.spawn(this.player.x, this.player.y, amount, this.renderer.charW, this.renderer.charH, true);
+
+        // Show damage flash effect
+        this.showDamageFlash();
+
+        // Update HP display
+        this.updateHPDisplay();
+
+        console.log(`Player HP: ${this.player.hp}/${this.player.maxHp}`);
+
+        // Check for game over
+        if (this.player.hp <= 0) {
+            this.player.hp = 0;
+            this.updateHPDisplay();
+            this.triggerGameOver();
+        }
+    }
+
+    /**
+     * Update the HP display in the UI
+     */
+    updateHPDisplay() {
+        if (this.hpDisplay) {
+            this.hpDisplay.innerText = this.player.hp;
+        }
+    }
+
+    /**
+     * Show a red screen flash when player takes damage
+     */
+    showDamageFlash() {
+        const flash = document.createElement('div');
+        flash.className = 'damage-flash';
+        document.body.appendChild(flash);
+
+        // Remove after animation completes
+        setTimeout(() => {
+            flash.remove();
+        }, 300);
+    }
+
+    /**
+     * Trigger game over state
+     */
+    triggerGameOver() {
+        this.gameOver = true;
+        console.log("GAME OVER!");
+        this.showGameOver();
+    }
+
+    /**
+     * Show the game over screen
+     */
+    showGameOver() {
+        // Create game over overlay if it doesn't exist
+        let overlay = document.getElementById('game-over-overlay');
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'game-over-overlay';
+            overlay.innerHTML = `
+                <div class="game-over-content">
+                    <h2>GAME OVER</h2>
+                    <p>You have been defeated.</p>
+                    <button id="restart-btn">RESTART</button>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+
+            // Add restart button listener
+            document.getElementById('restart-btn').addEventListener('click', () => {
+                this.restartGame();
+            });
+        }
+        overlay.classList.remove('hidden');
+    }
+
+    /**
+     * Hide the game over screen
+     */
+    hideGameOver() {
+        const overlay = document.getElementById('game-over-overlay');
+        if (overlay) {
+            overlay.classList.add('hidden');
+        }
+    }
+
+    /**
+     * Restart the game from floor 1
+     */
+    restartGame() {
+        this.floorLevel = 1;
+        this.currentMagazine = this.activeWeapon.MAGAZINE_SIZE; // Reset magazine
+        this.init();
+        this.updateHPDisplay();
+        console.log("Game restarted!");
     }
 
     toggleAim() {
@@ -312,76 +603,218 @@ class Game {
     }
 
     fireWeapon() {
-        // Check if we have ammo
-        if (!this.inventory.hasAmmo('9mm')) {
-            console.log("Click! Out of ammo!");
+        // Special case for melee
+        if (this.activeWeapon.TYPE === 'melee') {
+            this.fireMelee();
+            return;
+        }
+
+        // Check if magazine is empty
+        if (this.currentMagazine <= 0) {
+            console.log("Click! Magazine empty - press R to reload!");
+            this.showActionText("EMPTY!", this.player.x, this.player.y);
             return;
         }
 
         // Consume ammo
-        this.inventory.useAmmo('9mm');
+        this.currentMagazine--;
+        this.updateAmmoDisplay();
 
-        console.log(`Firing at ${this.reticle.x}, ${this.reticle.y}`);
+        console.log(`Firing ${this.activeWeapon.NAME} at ${this.reticle.x}, ${this.reticle.y}`);
 
-        const path = this.getLine(this.player.x, this.player.y, this.reticle.x, this.reticle.y);
+        // Handle weapon types
+        if (this.activeWeapon.TYPE === 'hitscan') {
+            // Handle multiple projectiles (SHOTGUN)
+            const pellets = this.activeWeapon.PELLETS || 1;
+            const spread = this.activeWeapon.SPREAD || 0;
+            const burst = this.activeWeapon.BURST || 1;
 
-        // Remove start point (player) from path
-        path.shift();
+            for (let i = 0; i < pellets; i++) {
+                // For spread, we slightly offset the target
+                let targetX = this.reticle.x;
+                let targetY = this.reticle.y;
 
-        // Check for hits
-        const validPath = [];
+                if (spread > 0 && pellets > 1) {
+                    // Add some randomness to target
+                    targetX += (Math.random() - 0.5) * spread * 10;
+                    targetY += (Math.random() - 0.5) * spread * 10;
+                }
+
+                this.fireHitscan(Math.round(targetX), Math.round(targetY));
+            }
+
+        } else if (this.activeWeapon.TYPE === 'projectile') {
+            this.fireProjectile();
+        }
+
+        // Process turn after effects
+        this.completePlayerAction();
+    }
+
+    completePlayerAction() {
+        if (this.pendingTracers.length > 0) {
+            // Flatten paths if needed or renderer handles list of paths?
+            // Renderer.renderProjectileAnimation handles a single path array.
+            // We need to merge them or update renderer.
+            // For now, let's just flatten all points into one "path" for the animation frame.
+            const allPoints = [].concat(...this.pendingTracers);
+
+            this.renderer.renderProjectileAnimation(allPoints, () => {
+                this.pendingTracers = [];
+                // Enemy turn after player shoots
+                this.processTurn();
+            });
+        } else {
+            // Enemy turn immediately
+            this.processTurn();
+        }
+    }
+
+    fireMelee() {
+        const dx = Math.sign(this.reticle.x - this.player.x);
+        const dy = Math.sign(this.reticle.y - this.player.y);
+        const tx = this.player.x + dx;
+        const ty = this.player.y + dy;
+
+        // Check distance
+        const dist = Math.abs(this.reticle.x - this.player.x) + Math.abs(this.reticle.y - this.player.y);
+        if (dist > 1.5) {
+            console.log("Too far for melee!");
+            return;
+        }
+
+        console.log(`Melee attack at ${tx}, ${ty}`);
+
+        // Show visual
+        this.damageText.spawn(tx, ty, "SLASH", this.renderer.charW, this.renderer.charH, '#ffffff');
+
+        const key = ty * CONFIG.MAP_WIDTH + tx;
+        const enemy = this.enemyMap.get(key);
+        if (enemy) {
+            const damage = this.activeWeapon.DAMAGE;
+            this.applyDamage(enemy, damage);
+        }
+
+        this.completePlayerAction();
+    }
+
+    fireHitscan(targetX, targetY) {
+        const path = this.getLine(this.player.x, this.player.y, targetX, targetY);
+        path.shift(); // Remove start
+
+        // Max range check
+        const maxRange = this.activeWeapon.RANGE;
+        if (path.length > maxRange) {
+            path.splice(maxRange);
+        }
+
+        let hitPoint = null;
 
         for (let p of path) {
-            validPath.push(p);
+            hitPoint = p;
 
             // Check enemies
             const key = p.y * CONFIG.MAP_WIDTH + p.x;
             const enemy = this.enemyMap.get(key);
             if (enemy) {
-                const damage = this.player.damage || 1;
-                console.log(`Hit Enemy! Type: ${enemy.type}, HP: ${enemy.hp}`);
-
-                // Spawn floating damage text
-                this.damageText.spawn(p.x, p.y, damage, this.renderer.charW, this.renderer.charH);
-
-                const dead = enemy.takeDamage(damage); // Pistol dmg 1
-                if (dead) {
-                    console.log("Enemy Died!");
-                    // Award XP for the kill
-                    const xpGained = this.experience.getEnemyXP(enemy.type);
-                    this.experience.addXP(xpGained);
-
-                    // Chance to drop ammo (40%)
-                    if (Math.random() < 0.4) {
-                        const dropAmount = Math.floor(Math.random() * 4) + 2; // 2-5 ammo
-                        const drop = { x: enemy.x, y: enemy.y, type: '9mm', amount: dropAmount };
-                        this.pickups.push(drop);
-                        this.pickupMap.set(key, drop);
-                        console.log(`Enemy dropped ${dropAmount} 9mm ammo!`);
-                    }
-
-                    this.enemyMap.delete(key);
-                    const idx = this.enemies.indexOf(enemy);
-                    if (idx > -1) this.enemies.splice(idx, 1);
-                } else {
-                    enemy.alerted = true;
-                }
-                break; // Stop projectile
+                const damage = this.activeWeapon.DAMAGE;
+                this.applyDamage(enemy, damage);
+                break; // Stop raycast
             }
 
             // Check walls
             if (this.map[p.y][p.x] === CONFIG.TILE.WALL) {
-                console.log("Hit Wall!");
                 break; // Stop raycast
             }
         }
 
-        // Render projectile trail
-        this.renderer.renderProjectileAnimation(validPath, () => {
-            this.renderer.fullRender(this.player, this.visible, this.explored, this.aiming ? this.reticle : null, this.enemyMap, this.pickupMap);
-            // Enemy turn after player shoots
-            this.processTurn();
-        });
+        // Render tracer
+        if (hitPoint) {
+            this.drawTracer(this.player, hitPoint);
+        }
+    }
+
+    fireProjectile() {
+        // For rockets, we want to travel to the target and explode
+        const path = this.getLine(this.player.x, this.player.y, this.reticle.x, this.reticle.y);
+        path.shift();
+
+        // Find impact point (wall or enemy or max range)
+        let impact = { x: this.reticle.x, y: this.reticle.y };
+
+        for (let p of path) {
+            const key = p.y * CONFIG.MAP_WIDTH + p.x;
+            if (this.enemyMap.has(key) || this.map[p.y][p.x] === CONFIG.TILE.WALL) {
+                impact = p;
+                break;
+            }
+        }
+
+        // Determine explosion center
+        console.log(`Rocket impact at ${impact.x}, ${impact.y}`);
+        this.explodeRocket(impact.x, impact.y);
+        this.drawTracer(this.player, impact, '#ffaa00');
+    }
+
+    explodeRocket(x, y) {
+        const radius = this.activeWeapon.AOE_RADIUS || 2;
+        const centerDamage = this.activeWeapon.DAMAGE;
+        const aoeDamage = this.activeWeapon.AOE_DAMAGE;
+
+        // Visual for explosion
+        this.showActionText("BOOM!", x, y);
+
+        for (let dy = -radius; dy <= radius; dy++) {
+            for (let dx = -radius; dx <= radius; dx++) {
+                const tx = x + dx;
+                const ty = y + dy;
+
+                if (tx < 0 || tx >= CONFIG.MAP_WIDTH || ty < 0 || ty >= CONFIG.MAP_HEIGHT) continue;
+
+                // Check for enemies
+                const key = ty * CONFIG.MAP_WIDTH + tx;
+                const enemy = this.enemyMap.get(key);
+                if (enemy) {
+                    // Direct hit vs splash
+                    const dist = Math.abs(dx) + Math.abs(dy);
+                    const damage = (dx === 0 && dy === 0) ? centerDamage : aoeDamage;
+                    this.applyDamage(enemy, damage);
+                }
+            }
+        }
+    }
+
+    applyDamage(enemy, damage) {
+        console.log(`Hit Enemy! Type: ${enemy.type}, HP: ${enemy.hp} for ${damage}`);
+        this.damageText.spawn(enemy.x, enemy.y, damage, this.renderer.charW, this.renderer.charH);
+
+        const dead = enemy.takeDamage(damage);
+        if (dead) {
+            console.log("Enemy Died!");
+            const xpGained = this.experience.getEnemyXP(enemy.type);
+            this.experience.addXP(xpGained);
+
+            // Chance to drop something
+            if (Math.random() < 0.4) {
+                // Reuse level gen logic essentially, or simple drop
+                // Ensure we drop ammo for current weapon sometimes
+                const dropType = (Math.random() < 0.3) ? this.activeWeapon.AMMO_TYPE : '9mm';
+                const drop = { x: enemy.x, y: enemy.y, type: 'ammo', ammoType: dropType, amount: 5 };
+                this.pickups.push(drop);
+                this.pickupMap.set(enemy.y * CONFIG.MAP_WIDTH + enemy.x, drop);
+            }
+
+            this.enemyMap.delete(enemy.y * CONFIG.MAP_WIDTH + enemy.x);
+            const idx = this.enemies.indexOf(enemy);
+            if (idx > -1) this.enemies.splice(idx, 1);
+        } else {
+            enemy.alerted = true;
+        }
+    }
+
+    drawTracer(start, end, color = '#ffff00') {
+        const path = this.getLine(start.x, start.y, end.x, end.y);
+        this.pendingTracers.push(path);
     }
 
     getLine(x0, y0, x1, y1) {

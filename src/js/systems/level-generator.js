@@ -70,20 +70,48 @@ export class LevelGenerator {
             }
         }
 
-        // Spawn ammo pickups
+        // Spawn pickups (Ammo and Weapons)
         const pickups = [];
         for (let i = 0; i < this.rooms.length; i++) {
             const room = this.rooms[i];
-            // 40% chance to spawn ammo in each room
-            if (Math.random() < 0.4) {
+            // 50% chance to spawn something in each room
+            if (Math.random() < 0.5) {
                 const ax = Math.floor(Math.random() * (room.w - 2)) + room.x1 + 1;
                 const ay = Math.floor(Math.random() * (room.h - 2)) + room.y1 + 1;
 
                 if (ay >= 0 && ay < CONFIG.MAP_HEIGHT && ax >= 0 && ax < CONFIG.MAP_WIDTH) {
                     if (this.map[ay][ax] === CONFIG.TILE.FLOOR) {
-                        // Random ammo amount 3-8
-                        const amount = Math.floor(Math.random() * 6) + 3;
-                        pickups.push({ x: ax, y: ay, type: '9mm', amount: amount });
+                        // 20% chance for a weapon, 80% for ammo
+                        if (Math.random() < 0.2) {
+                            // Weapon drop
+                            const weapons = Object.values(CONFIG.WEAPON).filter(w => w.NAME !== 'Pistol' && w.NAME !== 'Combat Knife');
+                            const weapon = weapons[Math.floor(Math.random() * weapons.length)];
+                            pickups.push({ x: ax, y: ay, type: 'weapon', weaponType: weapon.NAME, ...weapon });
+                        } else {
+                            // Ammo drop
+                            const ammoTypes = [
+                                { type: '9mm', amount: 12, weight: 0.4 },
+                                { type: 'shells', amount: 6, weight: 0.2 },
+                                { type: '7.62mm', amount: 20, weight: 0.3 },
+                                { type: 'rocket', amount: 2, weight: 0.1 }
+                            ];
+
+                            const totalWeight = ammoTypes.reduce((sum, item) => sum + item.weight, 0);
+                            let random = Math.random() * totalWeight;
+                            let selectedAmmo = ammoTypes[0];
+
+                            for (const ammo of ammoTypes) {
+                                random -= ammo.weight;
+                                if (random <= 0) {
+                                    selectedAmmo = ammo;
+                                    break;
+                                }
+                            }
+
+                            // Randomize amount slightly
+                            const amount = Math.floor(selectedAmmo.amount * (0.8 + Math.random() * 0.4));
+                            pickups.push({ x: ax, y: ay, type: 'ammo', ammoType: selectedAmmo.type, amount: amount });
+                        }
                     }
                 }
             }

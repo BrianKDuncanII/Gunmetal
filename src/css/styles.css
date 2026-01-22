@@ -282,9 +282,138 @@ h1 {
     }
 }
 
+/* Player Damage Text (incoming damage) */
+.damage-text.player-damage {
+    color: #ff0000;
+    font-size: 2.2rem;
+    text-shadow: 0 0 12px #ff0000, 0 0 20px #cc0000, 2px 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+/* Action Text (Reload, Empty, etc.) */
+.action-text {
+    position: absolute;
+    color: #00ffaa;
+    font-size: 1.6rem;
+    font-weight: bold;
+    text-shadow: 0 0 8px #00ffaa, 2px 2px 4px rgba(0, 0, 0, 0.8);
+    pointer-events: none;
+    z-index: 50;
+    transform: translateX(-50%);
+    animation: action-float 1s ease-out forwards;
+}
+
+@keyframes action-float {
+    0% {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+
+    50% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-50px);
+    }
+}
+
+/* Screen Flash on Player Damage */
+.damage-flash {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    background: radial-gradient(ellipse at center, rgba(255, 0, 0, 0.3) 0%, transparent 70%);
+    z-index: 999;
+    animation: damage-flash-anim 0.3s ease-out forwards;
+}
+
+@keyframes damage-flash-anim {
+    0% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0;
+    }
+}
+
 /* Pickup Styles */
 .pickup-ammo {
     color: #ffcc00;
     text-shadow: 0 0 5px #ff9900;
     font-weight: bold;
+}
+
+/* Game Over Overlay */
+#game-over-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    animation: fade-in 0.5s ease-out;
+}
+
+#game-over-overlay.hidden {
+    display: none;
+}
+
+.game-over-content {
+    text-align: center;
+    padding: 40px 60px;
+    border: 2px solid var(--accent-color);
+    background: rgba(16, 18, 28, 0.95);
+    box-shadow: 0 0 40px rgba(236, 39, 63, 0.5);
+}
+
+.game-over-content h2 {
+    font-size: 3rem;
+    color: var(--accent-color);
+    margin: 0 0 20px 0;
+    letter-spacing: 0.5rem;
+    text-shadow: 0 0 20px var(--accent-color);
+    animation: pulse 1.5s infinite;
+}
+
+.game-over-content p {
+    font-size: 1.2rem;
+    color: #aaa;
+    margin: 0 0 30px 0;
+}
+
+#restart-btn {
+    background: transparent;
+    border: 2px solid var(--text-color);
+    color: var(--text-color);
+    font-family: var(--font-family);
+    font-size: 1.2rem;
+    padding: 12px 40px;
+    cursor: pointer;
+    letter-spacing: 0.2rem;
+    transition: all 0.2s ease;
+}
+
+#restart-btn:hover {
+    background: var(--text-color);
+    color: var(--bg-color);
+    box-shadow: 0 0 20px var(--text-color);
+}
+
+@keyframes fade-in {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
 }

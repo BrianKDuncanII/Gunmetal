@@ -16,7 +16,10 @@ export class Inventory {
 
         // Initial render to ensure it's empty/ready
         this.render();
+        this.render();
         this.updateAmmoUI();
+
+        this.onEquip = null; // Callback for equipping weapons
     }
 
     /**
@@ -132,6 +135,17 @@ export class Inventory {
                 this.selectedIndex = Math.min(this.items.length - 1, this.selectedIndex + 1);
                 this.render();
                 break;
+            case 'Enter':
+                e.preventDefault();
+                if (this.items[this.selectedIndex]) {
+                    const item = this.items[this.selectedIndex];
+                    if ((item.type === 'weapon' || item.damage) && this.onEquip) {
+                        this.onEquip(item);
+                        // Optional: close inventory?
+                        this.toggle();
+                    }
+                }
+                break;
         }
     }
 
@@ -139,7 +153,7 @@ export class Inventory {
         // Build info string based on item properties
         const info = [];
 
-        info.push(`Name: ${item.name || 'Unknown'}`);
+        info.push(`Name: ${item.name || item.NAME || 'Unknown'}`);
 
         // Item type
         const type = item.type || (item.damage ? 'weapon' : 'misc');
@@ -147,13 +161,21 @@ export class Inventory {
 
         // Weapon stats
         if (item.damage !== undefined) {
-            info.push(`Damage: ${item.damage}`);
+            // Handle shotgun pellets
+            if (item.PELLETS) {
+                info.push(`Damage: ${item.DAMAGE}x${item.PELLETS}`);
+            } else {
+                info.push(`Damage: ${item.DAMAGE || item.damage}`);
+            }
         }
-        if (item.range !== undefined) {
-            info.push(`Range: ${item.range}`);
+        if (item.RANGE || item.range !== undefined) {
+            info.push(`Range: ${item.RANGE || item.range}`);
         }
-        if (item.ammo !== undefined) {
-            info.push(`Ammo: ${item.ammo}`);
+        if (item.MAGAZINE_SIZE !== undefined) {
+            info.push(`Mag: ${item.MAGAZINE_SIZE}`);
+        }
+        if (item.AMMO_TYPE) {
+            info.push(`Ammo: ${item.AMMO_TYPE}`);
         }
 
         // Ammo item stats
@@ -206,7 +228,7 @@ export class Inventory {
 
             this.items.forEach((item, index) => {
                 const li = document.createElement('li');
-                li.innerText = item.name || item;
+                li.innerText = item.name || item.NAME || item;
                 if (index === this.selectedIndex) {
                     li.classList.add('selected');
                 }
@@ -249,7 +271,7 @@ export class Inventory {
         // Controls hint
         const hint = document.createElement('div');
         hint.className = 'inventory-hint';
-        hint.innerText = '↑/↓ Navigate | I Close';
+        hint.innerText = '↑/↓ Navigate | Enter Equip | I Close';
         this.container.appendChild(hint);
     }
 }
