@@ -8,6 +8,8 @@ import { Experience } from './systems/experience.js';
 import { Pathfinding } from './systems/pathfinding.js';
 import { Minimap } from './systems/minimap.js';
 import { SoundManager } from './systems/sound-manager.js';
+import { ParticleSystem } from './systems/particles.js';
+import { Logger } from './systems/logger.js';
 
 class Game {
     constructor() {
@@ -26,6 +28,8 @@ class Game {
         this.experience = new Experience();
         this.minimap = new Minimap();
         this.soundManager = new SoundManager();
+        this.particleSystem = new ParticleSystem(document.getElementById('game-container'));
+        this.logger = new Logger();
 
         this.map = [];
         this.rooms = [];
@@ -113,6 +117,10 @@ class Game {
 
     loop() {
         this.updateFPS();
+        const now = performance.now();
+        const dt = (now - this.lastTime) / 1000 || 0.016;
+        this.particleSystem.update(dt);
+
         requestAnimationFrame(() => this.loop());
     }
 
@@ -224,6 +232,7 @@ class Game {
     nextLevel() {
         this.floorLevel++;
         console.log(`Descended to floor ${this.floorLevel}`);
+        this.logger.important(`Descended to Floor ${this.floorLevel}`);
         this.soundManager.play('ELEVATOR');
         this.init();
     }
@@ -281,11 +290,13 @@ class Game {
                 this.equipWeapon(pickup);
 
                 this.showActionText(`Got ${pickup.NAME}!`, this.player.x, this.player.y);
+                this.logger.loot(`Picked up ${pickup.NAME}`);
             } else {
                 this.inventory.addAmmo(pickup.ammoType, pickup.amount);
                 this.soundManager.play('PICKUP_AMMO');
                 console.log(`Picked up ${pickup.amount} ${pickup.ammoType} ammo!`);
                 this.showActionText(`+${pickup.amount} ${pickup.ammoType}`, this.player.x, this.player.y);
+                this.logger.loot(`Picked up ${pickup.amount} ${pickup.ammoType} ammo`);
             }
             this.pickupMap.delete(pickupKey);
             const idx = this.pickups.indexOf(pickup);
@@ -345,6 +356,11 @@ class Game {
         // Show floating "Reload!" text
         this.showActionText("Reload!", this.player.x, this.player.y);
         this.soundManager.play('RELOAD');
+
+        // Spawn Magazine Particle
+        const px = this.player.x * this.renderer.charW + this.renderer.charW / 2;
+        const py = this.player.y * this.renderer.charH + this.renderer.charH / 2;
+        this.particleSystem.spawnMag(px, py);
 
         // Update ammo display
         this.updateAmmoDisplay();
@@ -593,11 +609,43 @@ class Game {
             document.body.appendChild(overlay);
 
             // Add restart button listener
+            // Use arrow function in listener to capture 'this' correctly
             document.getElementById('restart-btn').addEventListener('click', () => {
                 this.restartGame();
             });
         }
         overlay.classList.remove('hidden');
+    }
+
+    /**
+     * Hide the game over screen
+     */
+    hideGameOver() {
+        const overlay = document.getElementById('game-over-overlay');
+        if (overlay) {
+            overlay.classList.add('hidden');
+        }
+    }
+
+    resetInventory() {
+        // Helper to reset inventory state
+        this.inventory.items = [];
+        this.inventory.addItem({ name: '9mm Ammo', type: 'ammo', ammoType: '9mm', amount: 12 });
+        this.inventory.render();
+        this.inventory.updateAmmoUI();
+    }
+
+    restartGame() {
+        this.hideGameOver();
+        this.gameOver = false;
+
+        // Reset Logic - reusing instance
+        this.player.hp = CONFIG.PLAYER.START_HP;
+        this.experience.reset();
+        this.floorLevel = 1;
+        this.resetInventory();
+
+        this.init();
     }
 
     /**
@@ -700,6 +748,11 @@ class Game {
 
         console.log(`Firing ${this.activeWeapon.NAME} at ${this.reticle.x}, ${this.reticle.y}`);
         this.soundManager.playWeaponSound(this.activeWeapon.NAME);
+
+        // Spawn Shell Particle
+        const px = this.player.x * this.renderer.charW + this.renderer.charW / 2;
+        const py = this.player.y * this.renderer.charH + this.renderer.charH / 2;
+        this.particleSystem.spawnShell(px, py);
 
         // Handle weapon types
         if (this.activeWeapon.TYPE === 'hitscan') {
@@ -881,8 +934,14 @@ class Game {
         const dead = enemy.takeDamage(damage);
         if (dead) {
             console.log("Enemy Died!");
+            this.logger.log("Enemy eliminated");
+
             const xpGained = this.experience.getEnemyXP(enemy.type);
-            this.experience.addXP(xpGained);
+            const leveledUp = this.experience.addXP(xpGained);
+            if (leveledUp) {
+                this.soundManager.play('LEVEL_UP');
+                this.logger.levelUp(`Level Up! Reached Level ${this.experience.level}`);
+            }
 
             // Chance to drop something
             if (Math.random() < 0.4) {

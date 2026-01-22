@@ -417,6 +417,7 @@ h1 {
         opacity: 1;
     }
 }
+
 /* Minimap */
 #minimap {
     position: absolute;
@@ -427,4 +428,73 @@ h1 {
     z-index: 20;
     pointer-events: none;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+.particle {
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    z-index: 60;
+    /* Above UI text action floaters? Maybe below action text but above map. Action text is 50. */
+    font-weight: bold;
+    will-change: transform;
+}
+
+/* Action Log */
+#log-container {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    width: 300px;
+    height: 150px;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    overflow: hidden;
+    z-index: 80;
+    text-shadow: 1px 1px 0 #000;
+}
+
+.log-entry {
+    font-size: 0.9rem;
+    margin-top: 4px;
+    color: #888;
+    animation: fade-in-log 0.2s ease-out;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 2px 5px;
+    border-radius: 2px;
+}
+
+.log-entry.important {
+    color: var(--text-color);
+    font-weight: bold;
+}
+
+.log-entry.danger {
+    color: var(--accent-color);
+}
+
+.log-entry.loot {
+    color: #f1c40f;
+}
+
+.log-entry.level-up {
+    color: #00ffff;
+    font-weight: bold;
+    font-size: 1.1rem;
+    border: 1px solid #00ffff;
+}
+
+@keyframes fade-in-log {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }

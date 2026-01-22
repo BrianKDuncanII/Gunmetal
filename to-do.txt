@@ -1,5 +1,4 @@
 Things to change:
-1. Rockets fired from the rocket launcher should damage the player if they are too close to the impact point.
 2. Improve the current GUI for displaying stats. Remove the "position" text. And title for the game.
 
 Things to implement:
@@ -8,11 +7,9 @@ Things to implement:
 4. Explosive barrels
 5. Upgrade kits for weapons
 6. Armor for the player (helmet and chest)
-7. Log GUI for displaying messages about things that have happened
 8. Skill tree for the player they can spec points into
 9. More varied enemies and potential bosses
 10. RNG events for floors
-11. Add a little magazine that pops out of the gun when reloading.
 12. Add debris that spawns when bullets hit walls.
 13. Improve the visuals of the game. (Add more color, better lighting, etc.)
 14. Add a shop system where the player can buy items and upgrades.
@@ -22,7 +19,14 @@ Things to implement:
 18. Add randomized spread for weapons, so they sometimes will miss enemies depending on the range from the enemy and the accuracy of the weapon.
 19. Add an inventory capacity limit.
 20. Add a way to drop items from the inventory.
+21. Implement grenades that can be thrown (start with frag grenades first)
+22. Implement health kits
+23. Add a way for items to be used in the inventory
+24. Sound Effects for using healing items
+25. Add loading screens for going to the next level and for booting up the game.
+26. When a player is on top of a pick up, it should show somewhere what it is.
 
 Current Issues:
-1. Melee enemies can't damage the player.
 3. Investigate type error in the console. "TypeError: can't access property "then", a.default.detectStore(...) is undefined h1-check.js:1:1301"
+4. When the player clicks "restart" on the game over screen, it doesn't remove the game over GUI.
+5. Magazine and bullet shell particles don't spawn next to the player's position. 
