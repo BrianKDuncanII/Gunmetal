@@ -3,6 +3,8 @@ import { LevelGenerator } from './systems/level-generator.js';
 import { Renderer } from './systems/renderer.js';
 import { Inventory } from './systems/inventory.js';
 import { Enemy } from './systems/enemy.js';
+import { DamageText } from './systems/damage-text.js';
+import { Experience } from './systems/experience.js';
 
 class Game {
     constructor() {
@@ -13,6 +15,8 @@ class Game {
         this.renderer = new Renderer(this.container, this.posDisplay);
         this.levelGenerator = new LevelGenerator();
         this.inventory = new Inventory();
+        this.damageText = new DamageText(this.container);
+        this.experience = new Experience();
 
         this.map = [];
         this.rooms = [];
@@ -294,10 +298,19 @@ class Game {
             const key = p.y * CONFIG.MAP_WIDTH + p.x;
             const enemy = this.enemyMap.get(key);
             if (enemy) {
+                const damage = this.player.damage || 1;
                 console.log(`Hit Enemy! Type: ${enemy.type}, HP: ${enemy.hp}`);
-                const dead = enemy.takeDamage(this.player.damage || 1); // Pistol dmg 1
+
+                // Spawn floating damage text
+                this.damageText.spawn(p.x, p.y, damage, this.renderer.charW, this.renderer.charH);
+
+                const dead = enemy.takeDamage(damage); // Pistol dmg 1
                 if (dead) {
                     console.log("Enemy Died!");
+                    // Award XP for the kill
+                    const xpGained = this.experience.getEnemyXP(enemy.type);
+                    this.experience.addXP(xpGained);
+
                     this.enemyMap.delete(key);
                     const idx = this.enemies.indexOf(enemy);
                     if (idx > -1) this.enemies.splice(idx, 1);

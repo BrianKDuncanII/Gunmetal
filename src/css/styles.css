@@ -256,3 +256,28 @@ h1 {
     /* Green */
     font-weight: bold;
 }
+
+/* Floating Damage Text */
+.damage-text {
+    position: absolute;
+    color: #ff4444;
+    font-size: 1.8rem;
+    font-weight: bold;
+    text-shadow: 0 0 8px #ff0000, 2px 2px 4px rgba(0, 0, 0, 0.8);
+    pointer-events: none;
+    z-index: 50;
+    transform: translateX(-50%);
+    animation: damage-float 0.8s ease-out forwards;
+}
+
+@keyframes damage-float {
+    0% {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-40px);
+    }
+}
