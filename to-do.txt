@@ -1,2 +1,29 @@
+Things to change:
 1. Rockets fired from the rocket launcher should damage the player if they are too close to the impact point.
-2. Melee enemies can't damage the player.
+2. Improve the current GUI for displaying stats. Remove the "position" text. And title for the game.
+
+Things to implement:
+2. Cover mechanics
+3. Environmental destruction (destroying walls with explosives)
+4. Explosive barrels
+5. Upgrade kits for weapons
+6. Armor for the player (helmet and chest)
+7. Log GUI for displaying messages about things that have happened
+8. Skill tree for the player they can spec points into
+9. More varied enemies and potential bosses
+10. RNG events for floors
+11. Add a little magazine that pops out of the gun when reloading.
+12. Add debris that spawns when bullets hit walls.
+13. Improve the visuals of the game. (Add more color, better lighting, etc.)
+14. Add a shop system where the player can buy items and upgrades.
+15. Animate the bullets firing so gunplay feels more impactful and exciting.
+16. There should be a way to cancel firing mode, probably by using 'escape' or something similar.
+17. Look function with the 'L' key that allows you to look around and get info for tiles.
+18. Add randomized spread for weapons, so they sometimes will miss enemies depending on the range from the enemy and the accuracy of the weapon.
+19. Add an inventory capacity limit.
+20. Add a way to drop items from the inventory.
+
+Current Issues:
+1. Melee enemies can't damage the player.
+2. The player is able to walk through enemies.
+3. Investigate type error in the console. "TypeError: can't access property "then", a.default.detectStore(...) is undefined h1-check.js:1:1301"

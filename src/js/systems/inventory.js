@@ -1,3 +1,5 @@
+import { SoundManager } from './sound-manager.js';
+
 export class Inventory {
     constructor() {
         this.items = [];
@@ -7,6 +9,8 @@ export class Inventory {
 
         // UI element for ammo display
         this.ammoDisplay = document.getElementById('ammo-display');
+
+        this.soundManager = new SoundManager();
 
         // Setup keyboard handler
         this.keyHandler = this.handleKeydown.bind(this);
@@ -128,17 +132,20 @@ export class Inventory {
             case 'ArrowUp':
                 e.preventDefault();
                 this.selectedIndex = Math.max(0, this.selectedIndex - 1);
+                this.soundManager.play('UI_NAV');
                 this.render();
                 break;
             case 'ArrowDown':
                 e.preventDefault();
                 this.selectedIndex = Math.min(this.items.length - 1, this.selectedIndex + 1);
+                this.soundManager.play('UI_NAV');
                 this.render();
                 break;
             case 'Enter':
                 e.preventDefault();
                 if (this.items[this.selectedIndex]) {
                     const item = this.items[this.selectedIndex];
+                    this.soundManager.play('UI_EQUIP');
                     if ((item.type === 'weapon' || item.damage) && this.onEquip) {
                         this.onEquip(item);
                         // Optional: close inventory?

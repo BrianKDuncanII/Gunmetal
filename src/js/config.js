@@ -86,6 +86,39 @@ export const CONFIG = {
             TYPE: 'melee'
         }
     },
+    AUDIO: {
+        MUSIC: {
+            MAIN_THEME: 'resources/audio/music/main_theme.ogg'
+        },
+        SFX: {
+            // Weapons
+            PISTOL: 'resources/audio/sfx/pistol.ogg',
+            SHOTGUN: 'resources/audio/sfx/shotgun.ogg',
+            RIFLE: 'resources/audio/sfx/rifle.ogg',
+            SNIPER: 'resources/audio/sfx/sniper.ogg',
+            ROCKET: 'resources/audio/sfx/rocket.ogg',
+            MINIGUN: 'resources/audio/sfx/minigun.ogg',
+            MELEE: 'resources/audio/sfx/melee.ogg',
+            DRY_FIRE: 'resources/audio/sfx/dry_fire.ogg',
+            RELOAD: 'resources/audio/sfx/reload.ogg',
+
+            // Items
+            PICKUP_AMMO: 'resources/audio/sfx/pickup_ammo.ogg',
+            PICKUP_WEAPON: 'resources/audio/sfx/pickup_weapon.ogg',
+
+            // Combat
+            PLAYER_HIT: 'resources/audio/sfx/player_hit.ogg',
+            ENEMY_HIT: 'resources/audio/sfx/enemy_hit.ogg',
+            LEVEL_UP: 'resources/audio/sfx/level_up.ogg',
+
+            // Environment
+            ELEVATOR: 'resources/audio/sfx/elevator.ogg',
+
+            // UI
+            UI_NAV: 'resources/audio/sfx/ui_nav.ogg',
+            UI_EQUIP: 'resources/audio/sfx/ui_equip.ogg'
+        }
+    },
     TILE: {
         WALL: '#',
         FLOOR: '.',

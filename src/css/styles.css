@@ -417,3 +417,14 @@ h1 {
         opacity: 1;
     }
 }
+/* Minimap */
+#minimap {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.7);
+    border: 1px solid var(--text-color);
+    z-index: 20;
+    pointer-events: none;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}

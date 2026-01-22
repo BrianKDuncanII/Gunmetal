@@ -6,6 +6,8 @@ import { Enemy } from './systems/enemy.js';
 import { DamageText } from './systems/damage-text.js';
 import { Experience } from './systems/experience.js';
 import { Pathfinding } from './systems/pathfinding.js';
+import { Minimap } from './systems/minimap.js';
+import { SoundManager } from './systems/sound-manager.js';
 
 class Game {
     constructor() {
@@ -22,6 +24,8 @@ class Game {
         };
         this.damageText = new DamageText(this.container);
         this.experience = new Experience();
+        this.minimap = new Minimap();
+        this.soundManager = new SoundManager();
 
         this.map = [];
         this.rooms = [];
@@ -100,6 +104,13 @@ class Game {
         this.updateAmmoDisplay();
     }
 
+    render(reticle = null) {
+        this.renderer.fullRender(this.player, this.visible, this.explored, reticle, this.enemyMap, this.pickupMap);
+        this.minimap.render(this.map, this.player, this.enemies, this.explored, this.visible);
+    }
+
+
+
     loop() {
         this.updateFPS();
         requestAnimationFrame(() => this.loop());
@@ -166,9 +177,54 @@ class Game {
         });
     }
 
+    init() {
+        // Generate Level
+        const levelData = this.levelGenerator.generate(CONFIG.MAP_WIDTH, CONFIG.MAP_HEIGHT, this.floorLevel);
+        this.map = levelData.map;
+        this.rooms = levelData.rooms;
+
+        // Player Start
+        this.player.x = levelData.playerStart.x;
+        this.player.y = levelData.playerStart.y;
+
+        // Update renderer map reference
+        this.renderer.setMap(this.map);
+
+        // Reset lists
+        this.explored.clear();
+        this.visible.clear();
+        this.enemies = [];
+        this.enemyMap.clear();
+        this.pickups = [];
+        this.pickupMap.clear();
+
+        // Spawn Enemies
+        levelData.enemies.forEach(e => {
+            const enemy = new Enemy(e.x, e.y, e.type);
+            this.enemies.push(enemy);
+            this.enemyMap.set(e.y * CONFIG.MAP_WIDTH + e.x, enemy);
+        });
+
+        // Spawn Pickups
+        levelData.pickups.forEach(p => {
+            this.pickups.push(p);
+            this.pickupMap.set(p.y * CONFIG.MAP_WIDTH + p.x, p);
+        });
+
+        // Initial Update
+        this.calculateFOV();
+        this.render();
+        this.renderer.updateCamera(this.player);
+        this.updateHPDisplay();
+        this.updateAmmoDisplay();
+
+        console.log("Level Initialized. Minimap ready.");
+    }
+
     nextLevel() {
         this.floorLevel++;
         console.log(`Descended to floor ${this.floorLevel}`);
+        this.soundManager.play('ELEVATOR');
         this.init();
     }
 
@@ -184,7 +240,7 @@ class Game {
 
             // Only update the tiles that changed
             this.calculateFOV();
-            this.renderer.fullRender(this.player, this.visible, this.explored, null, this.enemyMap, this.pickupMap);
+            this.render();
 
             this.renderer.updatePos(this.player);
             this.renderer.updateCamera(this.player);
@@ -208,6 +264,7 @@ class Game {
         if (pickup) {
             if (pickup.type === 'weapon') {
                 this.inventory.addItem(pickup);
+                this.soundManager.play('PICKUP_WEAPON');
                 console.log(`Picked up ${pickup.NAME}!`);
 
                 // Optional: Auto-equip if better? For now just add to inventory.
@@ -217,6 +274,7 @@ class Game {
                 this.showActionText(`Got ${pickup.NAME}!`, this.player.x, this.player.y);
             } else {
                 this.inventory.addAmmo(pickup.ammoType, pickup.amount);
+                this.soundManager.play('PICKUP_AMMO');
                 console.log(`Picked up ${pickup.amount} ${pickup.ammoType} ammo!`);
                 this.showActionText(`+${pickup.amount} ${pickup.ammoType}`, this.player.x, this.player.y);
             }
@@ -224,7 +282,7 @@ class Game {
             const idx = this.pickups.indexOf(pickup);
             if (idx > -1) this.pickups.splice(idx, 1);
 
-            this.renderer.fullRender(this.player, this.visible, this.explored, null, this.enemyMap, this.pickupMap);
+            this.render();
             this.updateAmmoDisplay();
         } else {
             console.log("Nothing to pick up here.");
@@ -277,6 +335,7 @@ class Game {
 
         // Show floating "Reload!" text
         this.showActionText("Reload!", this.player.x, this.player.y);
+        this.soundManager.play('RELOAD');
 
         // Update ammo display
         this.updateAmmoDisplay();
@@ -383,7 +442,8 @@ class Game {
                 const ny = enemy.y + dy;
 
                 // Check if trying to move into player (melee attack)
-                if (nx === this.player.x && ny === this.player.y && enemy.alerted) {
+                // If enemy moves into player, it attacks regardless of prior alert status
+                if (nx === this.player.x && ny === this.player.y) {
                     this.enemyMeleeAttack(enemy);
                     return;
                 }
@@ -404,7 +464,7 @@ class Game {
         });
 
         // Always re-render after enemy turn
-        this.renderer.fullRender(this.player, this.visible, this.explored, this.aiming ? this.reticle : null, this.enemyMap, this.pickupMap);
+        this.render(this.aiming ? this.reticle : null);
     }
 
     /**
@@ -445,6 +505,7 @@ class Game {
      */
     playerTakeDamage(amount, sourceX, sourceY) {
         this.player.hp -= amount;
+        this.soundManager.play('PLAYER_HIT');
 
         // Spawn floating damage text at player position (with player damage styling)
         this.damageText.spawn(this.player.x, this.player.y, amount, this.renderer.charW, this.renderer.charH, true);
@@ -564,7 +625,7 @@ class Game {
             this.fireWeapon();
             this.aiming = false;
         }
-        this.renderer.fullRender(this.player, this.visible, this.explored, this.aiming ? this.reticle : null, this.enemyMap, this.pickupMap);
+        this.render(this.aiming ? this.reticle : null);
     }
 
     findNearestVisibleEnemy() {
@@ -597,7 +658,7 @@ class Game {
         if (newX >= 0 && newX < CONFIG.MAP_WIDTH && newY >= 0 && newY < CONFIG.MAP_HEIGHT) {
             this.reticle.x = newX;
             this.reticle.y = newY;
-            this.renderer.fullRender(this.player, this.visible, this.explored, this.reticle, this.enemyMap, this.pickupMap);
+            this.render(this.reticle);
             this.renderer.updatePos(this.reticle);
         }
     }
@@ -613,6 +674,7 @@ class Game {
         if (this.currentMagazine <= 0) {
             console.log("Click! Magazine empty - press R to reload!");
             this.showActionText("EMPTY!", this.player.x, this.player.y);
+            this.soundManager.play('DRY_FIRE');
             return;
         }
 
@@ -621,6 +683,7 @@ class Game {
         this.updateAmmoDisplay();
 
         console.log(`Firing ${this.activeWeapon.NAME} at ${this.reticle.x}, ${this.reticle.y}`);
+        this.soundManager.playWeaponSound(this.activeWeapon.NAME);
 
         // Handle weapon types
         if (this.activeWeapon.TYPE === 'hitscan') {
@@ -661,6 +724,7 @@ class Game {
 
             this.renderer.renderProjectileAnimation(allPoints, () => {
                 this.pendingTracers = [];
+                this.render(this.aiming ? this.reticle : null); // Updates view removes tracers
                 // Enemy turn after player shoots
                 this.processTurn();
             });
@@ -771,6 +835,15 @@ class Game {
 
                 if (tx < 0 || tx >= CONFIG.MAP_WIDTH || ty < 0 || ty >= CONFIG.MAP_HEIGHT) continue;
 
+                if (tx === this.player.x && ty === this.player.y) {
+                    // Check player damage
+                    const dist = Math.abs(dx) + Math.abs(dy);
+                    const damage = (dx === 0 && dy === 0) ? centerDamage : aoeDamage;
+                    console.log(`Player hit by explosion for ${damage}!`);
+                    this.playerTakeDamage(damage, tx, ty);
+                    continue;
+                }
+
                 // Check for enemies
                 const key = ty * CONFIG.MAP_WIDTH + tx;
                 const enemy = this.enemyMap.get(key);
@@ -787,6 +860,7 @@ class Game {
     applyDamage(enemy, damage) {
         console.log(`Hit Enemy! Type: ${enemy.type}, HP: ${enemy.hp} for ${damage}`);
         this.damageText.spawn(enemy.x, enemy.y, damage, this.renderer.charW, this.renderer.charH);
+        this.soundManager.play('ENEMY_HIT');
 
         const dead = enemy.takeDamage(damage);
         if (dead) {
