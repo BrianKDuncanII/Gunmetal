@@ -96,3 +96,163 @@ h1 {
 .floor {
     color: #222;
 }
+
+.elevator {
+    color: #f1c40f;
+    font-weight: bold;
+}
+
+.explored {
+    color: #444;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* Inventory Styles */
+#inventory-container {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #0c0c0c;
+    border: 2px solid var(--text-color);
+    padding: 20px;
+    width: 500px;
+    max-height: 400px;
+    overflow-y: auto;
+    z-index: 100;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+    font-family: var(--font-family);
+}
+
+.inventory-layout {
+    display: flex;
+    gap: 20px;
+}
+
+.inventory-list-section {
+    flex: 1;
+    min-width: 180px;
+}
+
+.inventory-list-section h2 {
+    margin: 0 0 10px 0;
+    font-size: 1.2rem;
+    color: var(--text-color);
+    letter-spacing: 0.1rem;
+}
+
+.inventory-info-section {
+    flex: 1;
+    border-left: 1px solid #333;
+    padding-left: 20px;
+    min-width: 180px;
+}
+
+.inventory-info-section h3 {
+    margin: 0 0 10px 0;
+    font-size: 1rem;
+    color: var(--accent-color);
+    letter-spacing: 0.1rem;
+}
+
+.inventory-info-section p {
+    margin: 5px 0;
+    font-size: 0.9rem;
+    color: #aaa;
+}
+
+.inventory-info-section .info-spacer {
+    height: 10px;
+}
+
+.no-item-selected {
+    color: #666;
+    font-style: italic;
+}
+
+.inventory-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.inventory-list li {
+    padding: 8px 10px;
+    border-bottom: 1px solid #333;
+    cursor: pointer;
+    transition: background 0.1s;
+}
+
+.inventory-list li:hover {
+    background: #1a1a2a;
+}
+
+.inventory-list li.selected {
+    background: #2a2a4a;
+    color: #fff;
+    border-left: 3px solid var(--text-color);
+    padding-left: 7px;
+}
+
+.inventory-empty {
+    color: #666;
+    font-style: italic;
+    text-align: center;
+    padding: 20px 0;
+}
+
+.inventory-hint {
+    margin-top: 15px;
+    padding-top: 10px;
+    border-top: 1px solid #333;
+    font-size: 0.8rem;
+    color: #666;
+    text-align: center;
+}
+
+/* Projectile and Reticle */
+.projectile {
+    color: #ffaa00;
+    /* Bright Orange */
+    text-shadow: 0 0 5px #ff4400;
+    z-index: 5;
+    position: relative;
+}
+
+.reticle {
+    color: #00ffff;
+    /* Cyan */
+    text-shadow: 0 0 5px #00aaaa;
+    font-weight: bold;
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
+
+    100% {
+        opacity: 1;
+    }
+}
+
+/* Enemy Styles */
+.enemy-melee {
+    color: #ff3333;
+    /* Red */
+    font-weight: bold;
+}
+
+.enemy-ranged {
+    color: #33ff33;
+    /* Green */
+    font-weight: bold;
+}

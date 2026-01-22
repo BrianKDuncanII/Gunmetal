@@ -38,53 +38,133 @@ export class Renderer {
         document.body.removeChild(charMeasure);
     }
 
-    fullRender(player) {
-        this.container.innerHTML = "";
-        this.tileElements = [];
+    fullRender(player, visibleSet, exploredSet, reticle, enemyMap) {
+        // Initial build if empty
+        if (this.tileElements.length === 0) {
+            this.container.innerHTML = "";
+            for (let y = 0; y < CONFIG.MAP_HEIGHT; y++) {
+                const rowDiv = document.createElement('div');
+                rowDiv.style.height = `${this.charH}px`;
+                rowDiv.style.whiteSpace = "nowrap";
 
-        for (let y = 0; y < CONFIG.MAP_HEIGHT; y++) {
-            const rowDiv = document.createElement('div');
-            rowDiv.style.height = `${this.charH}px`;
-            rowDiv.style.whiteSpace = "nowrap";
-
-            const elementRow = [];
-            for (let x = 0; x < CONFIG.MAP_WIDTH; x++) {
-                const span = document.createElement('span');
-                span.style.display = 'inline-block';
-                span.style.width = `${this.charW}px`;
-                span.style.height = `${this.charH}px`;
-                span.style.textAlign = 'center';
-                elementRow.push(span);
-                rowDiv.appendChild(span);
-
-                this.updateTile(span, x, y, player);
+                const elementRow = [];
+                for (let x = 0; x < CONFIG.MAP_WIDTH; x++) {
+                    const span = document.createElement('span');
+                    span.style.display = 'inline-block';
+                    span.style.width = `${this.charW}px`;
+                    span.style.height = `${this.charH}px`;
+                    span.style.textAlign = 'center';
+                    elementRow.push(span);
+                    rowDiv.appendChild(span);
+                }
+                this.container.appendChild(rowDiv);
+                this.tileElements.push(elementRow);
             }
-            this.container.appendChild(rowDiv);
-            this.tileElements.push(elementRow);
         }
-        this.updatePos(player);
+
+        // Update loop (reuses DOM)
+        for (let y = 0; y < CONFIG.MAP_HEIGHT; y++) {
+            for (let x = 0; x < CONFIG.MAP_WIDTH; x++) {
+                const span = this.tileElements[y][x];
+                const key = y * CONFIG.MAP_WIDTH + x;
+                const isVisible = visibleSet ? visibleSet.has(key) : true;
+                const isExplored = exploredSet ? exploredSet.has(key) : true;
+                const isReticle = reticle && reticle.x === x && reticle.y === y;
+                const enemy = enemyMap ? enemyMap.get(key) : null;
+                const isEnemy = enemy && isVisible; // Only show enemies if visible
+
+                this.updateTile(span, x, y, player, isVisible, isExplored, isReticle, isEnemy ? enemy : null);
+            }
+        }
+        this.renderTile(player.x, player.y, player);
+    }
+
+    renderProjectileAnimation(path, callback) {
+        // Draw projectile chars along the path
+        path.forEach(p => {
+            if (this.tileElements[p.y] && this.tileElements[p.y][p.x]) {
+                const span = this.tileElements[p.y][p.x];
+                span.innerText = CONFIG.TILE.PROJECTILE;
+                span.classList.add('projectile'); // For styling (e.g. bright yellow)
+                span._text = CONFIG.TILE.PROJECTILE; // Update cache to avoid dirty check reverting it immediately if we were using a loop
+            }
+        });
+
+        // Clear after short delay
+        setTimeout(() => {
+            // We ideally want to revert to previous state.
+            // Simplest way is to just trigger a full re-render of the view.
+            if (callback) callback();
+        }, 100); // 100ms flash
     }
 
     renderTile(x, y, player) {
         const span = this.tileElements[y][x];
-        this.updateTile(span, x, y, player);
+        this.updateTile(span, x, y, player, true, true);
     }
 
-    updateTile(span, x, y, player) {
-        if (x === player.x && y === player.y) {
-            span.className = "player";
-            span.innerText = CONFIG.TILE.PLAYER;
-        } else {
+    updateTile(span, x, y, player, isVisible, isExplored, isReticle, enemy) {
+        let newClassName = '';
+        let newText = '';
+        let newBg = '';
+
+        if (isReticle) {
+            newClassName = 'reticle';
+            newText = CONFIG.TILE.RETICLE;
+        } else if (enemy) {
+            newClassName = enemy.type === CONFIG.TILE.ENEMY_MELEE ? 'enemy-melee' : 'enemy-ranged';
+            newText = enemy.type;
+        } else if (!isExplored && !isVisible) {
+            newClassName = 'empty';
+            newText = ' ';
+            newBg = 'transparent';
+        } else if (isExplored && !isVisible) {
+            newClassName = 'explored';
             const tile = this.map[y][x];
             if (tile === CONFIG.TILE.WALL) {
-                span.className = 'wall';
+                newText = CONFIG.TILE.WALL;
             } else if (tile === CONFIG.TILE.FLOOR) {
-                span.className = 'floor';
+                newText = CONFIG.TILE.FLOOR;
+            } else if (tile === CONFIG.TILE.ELEVATOR) {
+                newText = CONFIG.TILE.ELEVATOR;
             } else {
-                span.className = 'empty';
+                newText = CONFIG.TILE.EMPTY;
             }
-            span.innerText = tile;
+        } else {
+            // Visible
+            if (x === player.x && y === player.y) {
+                newClassName = "player";
+                newText = CONFIG.TILE.PLAYER;
+            } else {
+                const tile = this.map[y][x];
+                if (tile === CONFIG.TILE.WALL) {
+                    newClassName = 'wall';
+                } else if (tile === CONFIG.TILE.FLOOR) {
+                    newClassName = 'floor';
+                } else if (tile === CONFIG.TILE.ELEVATOR) {
+                    newClassName = 'elevator';
+                } else {
+                    newClassName = 'empty';
+                }
+                newText = tile;
+            }
         }
+
+        if (span._className !== newClassName) {
+            span.className = newClassName;
+            span._className = newClassName;
+        }
+
+        if (span._text !== newText) {
+            span.innerText = newText;
+            span._text = newText;
+        }
+
+        if (span._bg !== newBg) {
+            span.style.backgroundColor = newBg;
+            span._bg = newBg;
+        }
+
     }
 
     updatePos(player) {

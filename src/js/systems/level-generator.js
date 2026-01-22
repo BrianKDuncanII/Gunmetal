@@ -51,11 +51,36 @@ export class LevelGenerator {
             }
         }
 
+        if (this.rooms.length > 0) {
+            const lastRoom = this.rooms[this.rooms.length - 1];
+            const center = lastRoom.center();
+            this.map[center.y][center.x] = CONFIG.TILE.ELEVATOR;
+        }
+
+        const enemies = [];
+        // Spawn enemies in rooms (skipping first room)
+        for (let i = 1; i < this.rooms.length; i++) {
+            const room = this.rooms[i];
+            const numEnemies = Math.floor(Math.random() * 2) + 1; // 1-2 enemies
+            for (let j = 0; j < numEnemies; j++) {
+                const ex = Math.floor(Math.random() * (room.w - 2)) + room.x1 + 1;
+                const ey = Math.floor(Math.random() * (room.h - 2)) + room.y1 + 1;
+
+                if (ey >= 0 && ey < CONFIG.MAP_HEIGHT && ex >= 0 && ex < CONFIG.MAP_WIDTH) {
+                    if (this.map[ey][ex] === CONFIG.TILE.FLOOR) { // Ensure floor
+                        const type = Math.random() < 0.6 ? CONFIG.TILE.ENEMY_MELEE : CONFIG.TILE.ENEMY_RANGED;
+                        enemies.push({ x: ex, y: ey, type: type });
+                    }
+                }
+            }
+        }
+
         this.generateWalls();
 
         return {
             map: this.map,
             rooms: this.rooms,
+            enemies: enemies,
             playerStart: this.rooms.length > 0 ? this.rooms[0].center() : { x: 1, y: 1 }
         };
     }

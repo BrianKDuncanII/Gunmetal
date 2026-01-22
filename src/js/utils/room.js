@@ -4,6 +4,8 @@ export class Room {
         this.y1 = y;
         this.x2 = x + w;
         this.y2 = y + h;
+        this.w = w;
+        this.h = h;
     }
 
     center() {

@@ -1,0 +1,11 @@
+.enemy-melee {
+    color: #ff3333;
+    /* Red */
+    font-weight: bold;
+}
+
+.enemy-ranged {
+    color: #33ff33;
+    /* Green */
+    font-weight: bold;
+}
