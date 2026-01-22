@@ -43,8 +43,8 @@ export class Pathfinding {
             openSet.sort((a, b) => (fScore.get(a.key) || Infinity) - (fScore.get(b.key) || Infinity));
             const current = openSet.shift();
 
-            // Reached the goal (or adjacent to it - for attacking)
-            if (current.key === goalKey || this.isAdjacent(current.x, current.y, goalX, goalY)) {
+            // Reached the goal
+            if (current.key === goalKey) {
                 return this.reconstructPath(cameFrom, current);
             }
 

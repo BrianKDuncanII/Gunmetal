@@ -25,5 +25,4 @@ Things to implement:
 
 Current Issues:
 1. Melee enemies can't damage the player.
-2. The player is able to walk through enemies.
 3. Investigate type error in the console. "TypeError: can't access property "then", a.default.detectStore(...) is undefined h1-check.js:1:1301"

@@ -235,6 +235,15 @@ class Game {
         const newY = oldY + dy;
 
         if (this.isWalkable(newX, newY)) {
+            // Check for entity collision
+            const key = newY * CONFIG.MAP_WIDTH + newX;
+            if (this.enemyMap.has(key)) {
+                // Block movement
+                // Optional: We could trigger a melee attack here if we wanted player bump-attack
+                // For now, just block as requested
+                return;
+            }
+
             this.player.x = newX;
             this.player.y = newY;
 
@@ -409,6 +418,13 @@ class Game {
             let dy = 0;
 
             if (enemy.alerted) {
+                // Explicit Melee Attack Check
+                const distToPlayer = Math.abs(enemy.x - this.player.x) + Math.abs(enemy.y - this.player.y);
+                if (enemy.type === CONFIG.TILE.ENEMY_MELEE && distToPlayer <= 1) {
+                    this.enemyMeleeAttack(enemy);
+                    return;
+                }
+
                 // Use A* pathfinding to navigate toward player
                 const nextStep = Pathfinding.getNextStep(
                     enemy.x, enemy.y,
