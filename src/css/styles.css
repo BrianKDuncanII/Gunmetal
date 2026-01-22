@@ -281,3 +281,10 @@ h1 {
         transform: translateX(-50%) translateY(-40px);
     }
 }
+
+/* Pickup Styles */
+.pickup-ammo {
+    color: #ffcc00;
+    text-shadow: 0 0 5px #ff9900;
+    font-weight: bold;
+}

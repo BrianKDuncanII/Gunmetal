@@ -14,6 +14,7 @@ export const CONFIG = {
         RETICLE: '+',
         PROJECTILE: '*',
         ENEMY_MELEE: 'M',
-        ENEMY_RANGED: 'R'
+        ENEMY_RANGED: 'R',
+        AMMO_9MM: 'o'
     }
 };

@@ -70,12 +70,32 @@ export class LevelGenerator {
             }
         }
 
+        // Spawn ammo pickups
+        const pickups = [];
+        for (let i = 0; i < this.rooms.length; i++) {
+            const room = this.rooms[i];
+            // 40% chance to spawn ammo in each room
+            if (Math.random() < 0.4) {
+                const ax = Math.floor(Math.random() * (room.w - 2)) + room.x1 + 1;
+                const ay = Math.floor(Math.random() * (room.h - 2)) + room.y1 + 1;
+
+                if (ay >= 0 && ay < CONFIG.MAP_HEIGHT && ax >= 0 && ax < CONFIG.MAP_WIDTH) {
+                    if (this.map[ay][ax] === CONFIG.TILE.FLOOR) {
+                        // Random ammo amount 3-8
+                        const amount = Math.floor(Math.random() * 6) + 3;
+                        pickups.push({ x: ax, y: ay, type: '9mm', amount: amount });
+                    }
+                }
+            }
+        }
+
         this.generateWalls();
 
         return {
             map: this.map,
             rooms: this.rooms,
             enemies: enemies,
+            pickups: pickups,
             playerStart: this.rooms.length > 0 ? this.rooms[0].center() : { x: 1, y: 1 }
         };
     }

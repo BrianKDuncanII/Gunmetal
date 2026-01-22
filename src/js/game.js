@@ -30,6 +30,8 @@ class Game {
         this.visible = new Set();
         this.enemies = [];
         this.enemyMap = new Map();
+        this.pickups = [];
+        this.pickupMap = new Map();
 
         // FPS Tracking
         this.lastTime = performance.now();
@@ -56,11 +58,18 @@ class Game {
             this.enemyMap.set(e.y * CONFIG.MAP_WIDTH + e.x, e);
         });
 
+        // Initialize Pickups
+        this.pickups = level.pickups || [];
+        this.pickupMap.clear();
+        this.pickups.forEach(p => {
+            this.pickupMap.set(p.y * CONFIG.MAP_WIDTH + p.x, p);
+        });
+
         this.renderer.setMap(this.map);
         this.explored.clear();
         this.visible.clear();
         this.calculateFOV();
-        this.renderer.fullRender(this.player, this.visible, this.explored);
+        this.renderer.fullRender(this.player, this.visible, this.explored, null, this.enemyMap, this.pickupMap);
 
         // Initial camera position
         setTimeout(() => this.renderer.updateCamera(this.player, true), 100);
@@ -105,6 +114,10 @@ class Game {
                 case 'F':
                     this.toggleAim();
                     return;
+                case 'g':
+                case 'G':
+                    this.tryPickup();
+                    return;
                 default: return;
             }
 
@@ -140,9 +153,7 @@ class Game {
 
             // Only update the tiles that changed
             this.calculateFOV();
-            // Only update the tiles that changed
-            this.calculateFOV();
-            this.renderer.fullRender(this.player, this.visible, this.explored, null, this.enemyMap);
+            this.renderer.fullRender(this.player, this.visible, this.explored, null, this.enemyMap, this.pickupMap);
 
             this.renderer.updatePos(this.player);
             this.renderer.updateCamera(this.player);
@@ -153,6 +164,26 @@ class Game {
 
             // Enemy turn after player moves
             this.processTurn();
+        }
+    }
+
+    /**
+     * Try to pick up item at player's current position
+     */
+    tryPickup() {
+        const pickupKey = this.player.y * CONFIG.MAP_WIDTH + this.player.x;
+        const pickup = this.pickupMap.get(pickupKey);
+
+        if (pickup) {
+            this.inventory.addAmmo(pickup.type, pickup.amount);
+            console.log(`Picked up ${pickup.amount} ${pickup.type} ammo!`);
+            this.pickupMap.delete(pickupKey);
+            const idx = this.pickups.indexOf(pickup);
+            if (idx > -1) this.pickups.splice(idx, 1);
+
+            this.renderer.fullRender(this.player, this.visible, this.explored, null, this.enemyMap, this.pickupMap);
+        } else {
+            console.log("Nothing to pick up here.");
         }
     }
 
@@ -219,7 +250,7 @@ class Game {
         });
 
         // Always re-render after enemy turn
-        this.renderer.fullRender(this.player, this.visible, this.explored, this.aiming ? this.reticle : null, this.enemyMap);
+        this.renderer.fullRender(this.player, this.visible, this.explored, this.aiming ? this.reticle : null, this.enemyMap, this.pickupMap);
     }
 
     toggleAim() {
@@ -242,7 +273,7 @@ class Game {
             this.fireWeapon();
             this.aiming = false;
         }
-        this.renderer.fullRender(this.player, this.visible, this.explored, this.aiming ? this.reticle : null, this.enemyMap);
+        this.renderer.fullRender(this.player, this.visible, this.explored, this.aiming ? this.reticle : null, this.enemyMap, this.pickupMap);
     }
 
     findNearestVisibleEnemy() {
@@ -275,12 +306,21 @@ class Game {
         if (newX >= 0 && newX < CONFIG.MAP_WIDTH && newY >= 0 && newY < CONFIG.MAP_HEIGHT) {
             this.reticle.x = newX;
             this.reticle.y = newY;
-            this.renderer.fullRender(this.player, this.visible, this.explored, this.reticle, this.enemyMap);
+            this.renderer.fullRender(this.player, this.visible, this.explored, this.reticle, this.enemyMap, this.pickupMap);
             this.renderer.updatePos(this.reticle);
         }
     }
 
     fireWeapon() {
+        // Check if we have ammo
+        if (!this.inventory.hasAmmo('9mm')) {
+            console.log("Click! Out of ammo!");
+            return;
+        }
+
+        // Consume ammo
+        this.inventory.useAmmo('9mm');
+
         console.log(`Firing at ${this.reticle.x}, ${this.reticle.y}`);
 
         const path = this.getLine(this.player.x, this.player.y, this.reticle.x, this.reticle.y);
@@ -311,6 +351,15 @@ class Game {
                     const xpGained = this.experience.getEnemyXP(enemy.type);
                     this.experience.addXP(xpGained);
 
+                    // Chance to drop ammo (40%)
+                    if (Math.random() < 0.4) {
+                        const dropAmount = Math.floor(Math.random() * 4) + 2; // 2-5 ammo
+                        const drop = { x: enemy.x, y: enemy.y, type: '9mm', amount: dropAmount };
+                        this.pickups.push(drop);
+                        this.pickupMap.set(key, drop);
+                        console.log(`Enemy dropped ${dropAmount} 9mm ammo!`);
+                    }
+
                     this.enemyMap.delete(key);
                     const idx = this.enemies.indexOf(enemy);
                     if (idx > -1) this.enemies.splice(idx, 1);
@@ -329,7 +378,7 @@ class Game {
 
         // Render projectile trail
         this.renderer.renderProjectileAnimation(validPath, () => {
-            this.renderer.fullRender(this.player, this.visible, this.explored, this.aiming ? this.reticle : null, this.enemyMap);
+            this.renderer.fullRender(this.player, this.visible, this.explored, this.aiming ? this.reticle : null, this.enemyMap, this.pickupMap);
             // Enemy turn after player shoots
             this.processTurn();
         });

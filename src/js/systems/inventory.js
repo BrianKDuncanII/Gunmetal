@@ -5,11 +5,86 @@ export class Inventory {
         this.selectedIndex = 0;
         this.container = document.getElementById('inventory-container');
 
+        // UI element for ammo display
+        this.ammoDisplay = document.getElementById('ammo-display');
+
         // Setup keyboard handler
         this.keyHandler = this.handleKeydown.bind(this);
 
+        // Add starting ammo as an inventory item
+        this.items.push({ name: '9mm Ammo', type: 'ammo', ammoType: '9mm', amount: 12 });
+
         // Initial render to ensure it's empty/ready
         this.render();
+        this.updateAmmoUI();
+    }
+
+    /**
+     * Find an ammo item by type
+     */
+    findAmmoItem(type) {
+        return this.items.find(item => item.type === 'ammo' && item.ammoType === type);
+    }
+
+    /**
+     * Add ammo of a specific type (stacks with existing)
+     */
+    addAmmo(type, amount) {
+        const existingAmmo = this.findAmmoItem(type);
+        if (existingAmmo) {
+            existingAmmo.amount += amount;
+        } else {
+            this.items.push({ name: `${type} Ammo`, type: 'ammo', ammoType: type, amount: amount });
+        }
+        this.render();
+        this.updateAmmoUI();
+    }
+
+    /**
+     * Use ammo of a specific type
+     * @returns {boolean} True if ammo was available and used
+     */
+    useAmmo(type, amount = 1) {
+        const ammoItem = this.findAmmoItem(type);
+        if (!ammoItem || ammoItem.amount < amount) {
+            return false;
+        }
+        ammoItem.amount -= amount;
+
+        // Remove item if depleted
+        if (ammoItem.amount <= 0) {
+            const idx = this.items.indexOf(ammoItem);
+            if (idx > -1) this.items.splice(idx, 1);
+        }
+
+        this.render();
+        this.updateAmmoUI();
+        return true;
+    }
+
+    /**
+     * Check if ammo is available
+     */
+    hasAmmo(type, amount = 1) {
+        const ammoItem = this.findAmmoItem(type);
+        return ammoItem && ammoItem.amount >= amount;
+    }
+
+    /**
+     * Get current ammo count for a type
+     */
+    getAmmo(type) {
+        const ammoItem = this.findAmmoItem(type);
+        return ammoItem ? ammoItem.amount : 0;
+    }
+
+    /**
+     * Update the ammo display in the UI
+     */
+    updateAmmoUI() {
+        if (this.ammoDisplay) {
+            this.ammoDisplay.innerText = this.getAmmo('9mm');
+        }
     }
 
     addItem(item) {
@@ -79,6 +154,11 @@ export class Inventory {
         }
         if (item.ammo !== undefined) {
             info.push(`Ammo: ${item.ammo}`);
+        }
+
+        // Ammo item stats
+        if (item.type === 'ammo' && item.amount !== undefined) {
+            info.push(`Rounds: ${item.amount}`);
         }
 
         // Armor stats

@@ -38,7 +38,7 @@ export class Renderer {
         document.body.removeChild(charMeasure);
     }
 
-    fullRender(player, visibleSet, exploredSet, reticle, enemyMap) {
+    fullRender(player, visibleSet, exploredSet, reticle, enemyMap, pickupMap) {
         // Initial build if empty
         if (this.tileElements.length === 0) {
             this.container.innerHTML = "";
@@ -72,8 +72,10 @@ export class Renderer {
                 const isReticle = reticle && reticle.x === x && reticle.y === y;
                 const enemy = enemyMap ? enemyMap.get(key) : null;
                 const isEnemy = enemy && isVisible; // Only show enemies if visible
+                const pickup = pickupMap ? pickupMap.get(key) : null;
+                const isPickup = pickup && isVisible; // Only show pickups if visible
 
-                this.updateTile(span, x, y, player, isVisible, isExplored, isReticle, isEnemy ? enemy : null);
+                this.updateTile(span, x, y, player, isVisible, isExplored, isReticle, isEnemy ? enemy : null, isPickup ? pickup : null);
             }
         }
         this.renderTile(player.x, player.y, player);
@@ -103,7 +105,7 @@ export class Renderer {
         this.updateTile(span, x, y, player, true, true);
     }
 
-    updateTile(span, x, y, player, isVisible, isExplored, isReticle, enemy) {
+    updateTile(span, x, y, player, isVisible, isExplored, isReticle, enemy, pickup) {
         let newClassName = '';
         let newText = '';
         let newBg = '';
@@ -114,6 +116,9 @@ export class Renderer {
         } else if (enemy) {
             newClassName = enemy.type === CONFIG.TILE.ENEMY_MELEE ? 'enemy-melee' : 'enemy-ranged';
             newText = enemy.type;
+        } else if (pickup) {
+            newClassName = 'pickup-ammo';
+            newText = CONFIG.TILE.AMMO_9MM;
         } else if (!isExplored && !isVisible) {
             newClassName = 'empty';
             newText = ' ';
