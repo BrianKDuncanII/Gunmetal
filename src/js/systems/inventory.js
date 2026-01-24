@@ -25,6 +25,7 @@ export class Inventory {
         this.updateAmmoUI();
 
         this.onEquip = null; // Callback for equipping weapons
+        this.onUse = null;   // Callback for using items (medkits)
     }
 
     /**
@@ -166,6 +167,10 @@ export class Inventory {
                     if (item.type === 'mod') {
                         // Mod usage: show weapon selection
                         this.startWeaponSelection(item);
+                    } else if (item.type === 'health' && this.onUse) {
+                        this.onUse(item);
+                        this.removeItem(item);
+                        this.toggle();
                     } else if ((item.type === 'weapon' || item.damage) && this.onEquip) {
                         this.onEquip(item);
                         this.toggle();
@@ -235,19 +240,22 @@ export class Inventory {
     }
 
     getItemArt(item) {
-        const name = (item.name || item.NAME || "").toUpperCase();
-        if (name.includes('PISTOL')) return CONFIG.ASCII_ART.PISTOL;
-        if (name.includes('SHOTGUN')) return CONFIG.ASCII_ART.SHOTGUN;
-        if (name.includes('ASSERT') || name.includes('RIFLE')) {
-            if (name.includes('SNIPER')) return CONFIG.ASCII_ART.SNIPER;
-            return CONFIG.ASCII_ART.RIFLE;
-        }
-        if (name.includes('ROCKET')) return CONFIG.ASCII_ART.ROCKET;
-        if (name.includes('GRENADE')) return CONFIG.ASCII_ART.GRENADE;
-        if (name.includes('MINIGUN')) return CONFIG.ASCII_ART.MINIGUN;
+        if (!CONFIG.IMAGES) return null;
 
-        if (item.type === 'mod') return CONFIG.ASCII_ART.MOD;
-        if (item.type === 'ammo') return CONFIG.ASCII_ART.AMMO;
+        const name = (item.name || item.NAME || "").toUpperCase();
+        if (name.includes('PISTOL')) return CONFIG.IMAGES.PISTOL;
+        if (name.includes('SHOTGUN')) return CONFIG.IMAGES.SHOTGUN;
+        if (name.includes('ASSERT') || name.includes('RIFLE')) {
+            if (name.includes('SNIPER')) return CONFIG.IMAGES.SNIPER;
+            return CONFIG.IMAGES.RIFLE;
+        }
+        if (name.includes('ROCKET')) return CONFIG.IMAGES.ROCKET;
+        if (name.includes('GRENADE')) return CONFIG.IMAGES.GRENADE;
+        if (name.includes('MINIGUN')) return CONFIG.IMAGES.MINIGUN;
+        if (name.includes('HEALTH') || item.type === 'health') return CONFIG.IMAGES.MEDKIT;
+
+        if (item.type === 'mod') return CONFIG.IMAGES.MOD;
+        if (item.type === 'ammo') return CONFIG.IMAGES.AMMO;
 
         return null;
     }
@@ -359,9 +367,10 @@ export class Inventory {
             // ASCII Art Section
             const art = this.getItemArt(activeItem);
             if (art) {
-                const artEl = document.createElement('pre');
-                artEl.className = 'item-art';
-                artEl.innerText = art.trim();
+                const artEl = document.createElement('img');
+                artEl.className = 'item-art-image';
+                artEl.src = art;
+                artEl.alt = activeItem.name || activeItem.NAME || 'Item';
                 infoSection.appendChild(artEl);
 
                 const artSpacer = document.createElement('div');

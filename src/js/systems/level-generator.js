@@ -121,6 +121,23 @@ export class LevelGenerator {
         // Spawn mods (Rarely)
         for (let i = 0; i < this.rooms.length; i++) {
             const room = this.rooms[i];
+
+            // Health Kits (20% chance)
+            if (Math.random() < 0.2) {
+                const hx = Math.floor(Math.random() * (room.w - 2)) + room.x1 + 1;
+                const hy = Math.floor(Math.random() * (room.h - 2)) + room.y1 + 1;
+                if (this.map[hy][hx] === CONFIG.TILE.FLOOR) {
+                    pickups.push({
+                        x: hx,
+                        y: hy,
+                        type: 'health',
+                        name: 'Health Kit',
+                        heal: 30,
+                        description: 'Restores 30 HP.'
+                    });
+                }
+            }
+
             if (Math.random() < 0.15) {
                 const mx = Math.floor(Math.random() * (room.w - 2)) + room.x1 + 1;
                 const my = Math.floor(Math.random() * (room.h - 2)) + room.y1 + 1;
@@ -136,13 +153,40 @@ export class LevelGenerator {
         this.generateWalls();
         this.spawnEnvironmentObjects();
 
+        const ambientEmitters = this.spawnAmbientEmitters();
+
         return {
             map: this.map,
             rooms: this.rooms,
             enemies: enemies,
             pickups: pickups,
+            ambientEmitters: ambientEmitters,
             playerStart: this.rooms.length > 0 ? this.rooms[0].center() : { x: 1, y: 1 }
         };
+    }
+
+    spawnAmbientEmitters() {
+        const emitters = [];
+
+        // 1. Every room gets a tone
+        this.rooms.forEach((room, idx) => {
+            const center = room.center();
+            // First room is usually player start, keep it calmer? Or random.
+            let sound = Math.random() < 0.7 ? 'MACHINERY' : 'ELECTRICAL';
+
+            // Special Case: Elevator Room
+            if (this.map[center.y][center.x] === CONFIG.TILE.ELEVATOR) {
+                sound = 'ELEVATOR_IDLE';
+            }
+
+            emitters.push({ x: center.x, y: center.y, key: sound });
+        });
+
+        // 2. Add some "Wind" to the corridors? 
+        // Or just scattered machinery in large corridors.
+        // Let's just do room centers for now to keep it from being too chaotic, 
+        // plus maybe 1-2 random spots in hallways.
+        return emitters;
     }
 
     generateWalls() {

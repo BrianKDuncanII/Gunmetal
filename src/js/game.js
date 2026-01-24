@@ -20,16 +20,30 @@ class Game {
         this.renderer = new Renderer(this.container, this.posDisplay);
         this.levelGenerator = new LevelGenerator();
         this.inventory = new Inventory();
+        this.soundManager = new SoundManager();
+        this.particleSystem = new ParticleSystem(document.getElementById('game-container'));
+        this.logger = new Logger();
+        this.damageText = new DamageText(this.container);
+        this.experience = new Experience();
+        this.minimap = new Minimap();
+
+        // ... (Inventory callbacks)
         this.inventory.onEquip = (weapon) => {
             console.log("Equipping from inventory:", weapon.NAME);
             this.equipWeapon(weapon);
         };
-        this.damageText = new DamageText(this.container);
-        this.experience = new Experience();
-        this.minimap = new Minimap();
-        this.soundManager = new SoundManager();
-        this.particleSystem = new ParticleSystem(document.getElementById('game-container'));
-        this.logger = new Logger();
+        this.inventory.onUse = (item) => {
+            if (item.type === 'health') {
+                const oldHp = this.player.hp;
+                this.player.hp = Math.min(this.player.maxHp, this.player.hp + item.heal);
+                const healed = this.player.hp - oldHp;
+                console.log(`Used ${item.name}! Healed for ${healed} HP.`);
+                this.updateHPDisplay();
+                this.showActionText(`+${healed} HP`, this.player.x, this.player.y, '#00ff00');
+                this.logger.info(`Used Health Kit: +${healed} HP`);
+                this.soundManager.play('PICKUP_HEALTH'); // Reuse/Use pickup sound for healing
+            }
+        };
 
         this.map = [];
         this.rooms = [];
@@ -94,6 +108,15 @@ class Game {
         this.pickups.forEach(p => {
             this.pickupMap.set(p.y * CONFIG.MAP_WIDTH + p.x, p);
         });
+
+        // Initialize Ambient Emitters
+        this.soundManager.clearEmitters();
+        if (level.ambientEmitters) {
+            level.ambientEmitters.forEach(e => {
+                this.soundManager.addEmitter(e.x, e.y, e.key);
+            });
+        }
+        this.updateAmbientAudio();
 
         this.renderer.setMap(this.map);
         this.explored.clear();
@@ -302,6 +325,11 @@ class Game {
                 this.soundManager.play('UI_EQUIP');
                 this.showActionText(`Got ${pickup.name}!`, this.player.x, this.player.y);
                 this.logger.loot(`Found ${pickup.name} mod`);
+            } else if (pickup.type === 'health') {
+                this.inventory.addItem(pickup);
+                this.soundManager.play('PICKUP_HEALTH');
+                this.showActionText(`Got ${pickup.name}!`, this.player.x, this.player.y, '#ffffff');
+                this.logger.loot(`Found ${pickup.name}`);
             } else {
                 this.inventory.addAmmo(pickup.ammoType, pickup.amount);
                 this.soundManager.play('PICKUP_AMMO');
@@ -368,6 +396,7 @@ class Game {
         // Show floating "Reload!" text
         this.showActionText("Reload!", this.player.x, this.player.y);
         this.soundManager.play('RELOAD');
+        this.renderer.shake(5, 200);
 
         // Spawn Magazine Particle
         const px = this.player.x * this.renderer.charW + this.renderer.charW / 2;
@@ -698,6 +727,7 @@ class Game {
         // Update UI
         this.updateHPDisplay();
         this.showDamageFlash();
+        this.renderer.shake(15 + amount / 2, 400);
 
         // Check for game over
         if (this.player.hp <= 0) {
@@ -907,6 +937,14 @@ class Game {
         console.log(`Firing ${this.activeWeapon.NAME} at ${this.reticle.x}, ${this.reticle.y}`);
         this.soundManager.playWeaponSound(this.activeWeapon.NAME);
 
+        // Shake based on weapon
+        let shakePower = 8;
+        if (this.activeWeapon.NAME.includes('Rocket')) shakePower = 20;
+        if (this.activeWeapon.NAME.includes('Sniper')) shakePower = 15;
+        if (this.activeWeapon.NAME.includes('Shotgun')) shakePower = 12;
+        if (this.activeWeapon.NAME.includes('Minigun')) shakePower = 4;
+        this.renderer.shake(shakePower, 150);
+
         // Spawn Shell Particle
         const px = this.player.x * this.renderer.charW + this.renderer.charW / 2;
         const py = this.player.y * this.renderer.charH + this.renderer.charH / 2;
@@ -1085,6 +1123,7 @@ class Game {
 
         // Visual for explosion
         this.showActionText("BOOM!", x, y);
+        this.renderer.shake(25, 500);
 
         for (let dy = -radius; dy <= radius; dy++) {
             for (let dx = -radius; dx <= radius; dx++) {
@@ -1226,6 +1265,9 @@ class Game {
         this.visible.add(startKey);
         this.explored.add(startKey);
 
+        // Update Ambient Sounds based on new position
+        this.updateAmbientAudio();
+
         const radius = CONFIG.FOV_RADIUS;
 
         // Recursive Shadowcasting with Peeking
@@ -1352,6 +1394,12 @@ class Game {
             tile === CONFIG.TILE.BOX ||
             tile === CONFIG.TILE.BARREL ||
             tile === CONFIG.TILE.GENERATOR;
+    }
+
+    updateAmbientAudio() {
+        if (this.soundManager) {
+            this.soundManager.updateAmbient(this.player.x, this.player.y, this.map);
+        }
     }
 }
 

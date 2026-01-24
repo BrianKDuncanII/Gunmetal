@@ -237,17 +237,36 @@ h1 {
     text-align: center;
 }
 
-.item-art {
+.item-art-image {
     display: block;
+    max-width: 200px;
+    height: auto;
     margin: 10px auto;
-    color: var(--text-color);
-    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-    font-size: 0.22rem;
-    line-height: 1.0;
-    letter-spacing: -0.5px;
-    text-shadow: 0 0 5px var(--text-color);
+    filter: drop-shadow(0 0 10px var(--text-color));
     border-bottom: 1px solid #333;
     padding-bottom: 10px;
+}
+
+
+/* Pickups */
+.pickup-ammo {
+    color: #aaaa00;
+}
+
+.pickup-weapon {
+    color: #ffaa00;
+    font-weight: bold;
+}
+
+.pickup-health {
+    color: #ffffff;
+    text-shadow: 0 0 5px #00ffff;
+    font-weight: bold;
+}
+
+.pickup-mod {
+    color: #00ffaa;
+    font-weight: bold;
 }
 
 /* Projectile and Reticle */

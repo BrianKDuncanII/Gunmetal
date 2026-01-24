@@ -8,6 +8,10 @@ export class Renderer {
         this.charW = 0;
         this.charH = 0;
         this.map = []; // Will be set by Game
+        this.shakeIntensity = 0;
+        this.shakeDecay = 0;
+        this.lastUpdateTime = 0;
+        this.lastPlayerPos = { x: 0, y: 0 };
 
         this.updateCharDimensions();
 
@@ -152,13 +156,17 @@ export class Renderer {
             newClassName = enemy.type === CONFIG.TILE.ENEMY_MELEE ? 'enemy-melee' : 'enemy-ranged';
             newText = enemy.type;
         } else if (pickup) {
-            newClassName = pickup.type === 'weapon' ? 'pickup-weapon' : (pickup.type === 'mod' ? 'pickup-mod' : 'pickup-ammo');
+            newClassName = pickup.type === 'weapon' ? 'pickup-weapon' :
+                (pickup.type === 'mod' ? 'pickup-mod' :
+                    (pickup.type === 'health' ? 'pickup-health' : 'pickup-ammo'));
 
-            // Map ammo types to their tiles
+            // Map pickup types to their tiles
             if (pickup.type === 'mod') {
                 newText = CONFIG.TILE.MOD_DROP;
             } else if (pickup.type === 'weapon') {
                 newText = CONFIG.TILE.WEAPON_DROP;
+            } else if (pickup.type === 'health') {
+                newText = CONFIG.TILE.HEALTH_KIT;
             } else {
                 switch (pickup.ammoType) {
                     case 'shells': newText = CONFIG.TILE.AMMO_SHELLS; break;
@@ -260,16 +268,46 @@ export class Renderer {
         const viewportW = window.innerWidth;
         const viewportH = window.innerHeight;
 
-        // Target pixel position to center the player using cached dimensions
         const targetX = (viewportW / 2) - (player.x * this.charW) - (this.charW / 2);
         const targetY = (viewportH / 2) - (player.y * this.charH) - (this.charH / 2);
 
-        if (instant) {
+        if (instant || this.shakeIntensity > 0) {
             this.container.style.transition = 'none';
         } else {
             this.container.style.transition = 'transform 0.15s ease-out';
         }
 
-        this.container.style.transform = `translate(${targetX}px, ${targetY}px)`;
+        this.lastPlayerPos = { x: player.x, y: player.y };
+        const shakeX = (Math.random() - 0.5) * this.shakeIntensity;
+        const shakeY = (Math.random() - 0.5) * this.shakeIntensity;
+
+        this.container.style.transform = `translate(${targetX + shakeX}px, ${targetY + shakeY}px)`;
+    }
+
+    /**
+     * Trigger a screen shake effect
+     * @param {number} intensity - How many pixels to shake
+     * @param {number} duration - How long in ms (roughly)
+     */
+    shake(intensity, duration = 300) {
+        this.shakeIntensity = Math.max(this.shakeIntensity, intensity);
+        // Decay per frame: intensity / (duration / 16ms)
+        const decayPerFrame = intensity / (duration / 16);
+
+        const applyShake = () => {
+            if (this.shakeIntensity > 0) {
+                this.shakeIntensity -= decayPerFrame;
+                if (this.shakeIntensity < 0) this.shakeIntensity = 0;
+
+                // Re-center with new shake offset
+                this.updateCamera(this.lastPlayerPos);
+
+                if (this.shakeIntensity > 0) {
+                    requestAnimationFrame(applyShake);
+                }
+            }
+        };
+
+        requestAnimationFrame(applyShake);
     }
 }
