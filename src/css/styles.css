@@ -110,6 +110,30 @@ h1 {
     display: none !important;
 }
 
+/* Environment Objects */
+.barrel {
+    color: #e67e22;
+    font-weight: bold;
+}
+
+/* Orange */
+.box {
+    color: #8b4513;
+}
+
+/* SaddleBrown */
+.generator {
+    color: #3498db;
+    font-weight: bold;
+}
+
+/* Blue */
+.pipe {
+    color: #95a5a6;
+}
+
+/* Silver/Grey */
+
 /* Inventory Styles */
 #inventory-container {
     position: absolute;

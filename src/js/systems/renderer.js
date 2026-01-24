@@ -151,6 +151,14 @@ export class Renderer {
                     newClassName = 'floor';
                 } else if (tile === CONFIG.TILE.ELEVATOR) {
                     newClassName = 'elevator';
+                } else if (tile === CONFIG.TILE.BARREL) {
+                    newClassName = 'barrel';
+                } else if (tile === CONFIG.TILE.BOX) {
+                    newClassName = 'box';
+                } else if (tile === CONFIG.TILE.GENERATOR) {
+                    newClassName = 'generator';
+                } else if (tile === CONFIG.TILE.PIPE_V || tile === CONFIG.TILE.PIPE_H) {
+                    newClassName = 'pipe';
                 } else {
                     newClassName = 'empty';
                 }

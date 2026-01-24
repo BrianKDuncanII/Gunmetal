@@ -146,6 +146,12 @@ export const CONFIG = {
         AMMO_762: 'i',
         AMMO_ROCKET: 'r',
         AMMO_GRENADE: 'g',
+        // Environment Objects
+        BARREL: '0',
+        BOX: 'X',
+        GENERATOR: 'G',
+        PIPE_V: '|',
+        PIPE_H: '-',
         // Weapons (generic char for now, or specific)
         WEAPON_DROP: 'W'
     }

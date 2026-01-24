@@ -969,6 +969,8 @@ class Game {
         if (enemy) {
             const damage = this.activeWeapon.DAMAGE;
             this.applyDamage(enemy, damage);
+        } else if (this.map[ty][tx] === CONFIG.TILE.BOX) {
+            this.breakObject(tx, ty);
         }
 
         this.completePlayerAction();
@@ -1013,8 +1015,12 @@ class Game {
                 break; // Stop raycast
             }
 
-            // Check walls
-            if (this.map[p.y][p.x] === CONFIG.TILE.WALL) {
+            // Check walls / boxes
+            const tile = this.map[p.y][p.x];
+            if (tile === CONFIG.TILE.WALL) {
+                break; // Stop raycast
+            } else if (tile === CONFIG.TILE.BOX) {
+                this.breakObject(p.x, p.y);
                 break; // Stop raycast
             }
         }
@@ -1094,8 +1100,32 @@ class Game {
                     const dist = Math.abs(dx) + Math.abs(dy);
                     const damage = (dx === 0 && dy === 0) ? centerDamage : aoeDamage;
                     this.applyDamage(enemy, damage);
+                } else if (this.map[ty][tx] === CONFIG.TILE.BOX) {
+                    this.breakObject(tx, ty);
                 }
             }
+        }
+    }
+
+    breakObject(x, y) {
+        if (this.map[y][x] === CONFIG.TILE.BOX) {
+            this.map[y][x] = CONFIG.TILE.FLOOR;
+            this.logger.info("Box shattered!");
+            this.soundManager.play('ENEMY_HIT'); // Placeholder sound
+
+            // Loot chance
+            if (Math.random() < 0.3) {
+                const ammoTypes = ['9mm', 'shells', '7.62mm', 'rocket', 'grenade'];
+                const dropType = ammoTypes[Math.floor(Math.random() * ammoTypes.length)];
+                const amount = Math.floor(Math.random() * 5) + 1;
+
+                const drop = { x, y, type: 'ammo', ammoType: dropType, amount: amount };
+                this.pickups.push(drop);
+                this.pickupMap.set(y * CONFIG.MAP_WIDTH + x, drop);
+                this.logger.loot(`Found ${amount} ${dropType} inside!`);
+            }
+
+            this.render();
         }
     }
 
@@ -1167,7 +1197,11 @@ class Game {
 
     isWalkable(x, y) {
         if (y < 0 || y >= CONFIG.MAP_HEIGHT || x < 0 || x >= CONFIG.MAP_WIDTH) return false;
-        return this.map[y][x] === CONFIG.TILE.FLOOR || this.map[y][x] === CONFIG.TILE.ELEVATOR;
+        const tile = this.map[y][x];
+        return tile === CONFIG.TILE.FLOOR ||
+            tile === CONFIG.TILE.ELEVATOR ||
+            tile === CONFIG.TILE.PIPE_V ||
+            tile === CONFIG.TILE.PIPE_H;
     }
 
     calculateFOV() {
@@ -1302,7 +1336,12 @@ class Game {
 
     blocksLight(x, y) {
         if (x < 0 || y < 0 || x >= CONFIG.MAP_WIDTH || y >= CONFIG.MAP_HEIGHT) return true;
-        return this.map[y][x] === CONFIG.TILE.WALL || this.map[y][x] === CONFIG.TILE.EMPTY;
+        const tile = this.map[y][x];
+        return tile === CONFIG.TILE.WALL ||
+            tile === CONFIG.TILE.EMPTY ||
+            tile === CONFIG.TILE.BOX ||
+            tile === CONFIG.TILE.BARREL ||
+            tile === CONFIG.TILE.GENERATOR;
     }
 }
 

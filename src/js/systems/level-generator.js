@@ -119,6 +119,7 @@ export class LevelGenerator {
         }
 
         this.generateWalls();
+        this.spawnEnvironmentObjects();
 
         return {
             map: this.map,
@@ -385,6 +386,81 @@ export class LevelGenerator {
                 this.setFloor(x + w, y);
             }
         }
+    }
+
+    spawnEnvironmentObjects() {
+        for (let y = 1; y < CONFIG.MAP_HEIGHT - 1; y++) {
+            for (let x = 1; x < CONFIG.MAP_WIDTH - 1; x++) {
+                if (this.map[y][x] === CONFIG.TILE.FLOOR) {
+                    const adjacentWalls = this.countAdjacentWalls(x, y);
+                    const inRoom = this.isInsideAnyRoom(x, y);
+
+                    // 1. Pipes (ONLY outside rooms, decorate walls)
+                    if (!inRoom && adjacentWalls > 0 && Math.random() < 0.2) {
+                        const isNorthWall = this.map[y - 1][x] === CONFIG.TILE.WALL;
+                        const isSouthWall = this.map[y + 1][x] === CONFIG.TILE.WALL;
+                        const isWestWall = this.map[y][x - 1] === CONFIG.TILE.WALL;
+                        const isEastWall = this.map[y][x + 1] === CONFIG.TILE.WALL;
+
+                        if (isWestWall || isEastWall) {
+                            this.map[y][x] = CONFIG.TILE.PIPE_V;
+                        } else if (isNorthWall || isSouthWall) {
+                            this.map[y][x] = CONFIG.TILE.PIPE_H;
+                        }
+                        continue;
+                    }
+
+                    // 2. Collision Objects (Boxes, Barrels, Generators)
+                    // Ensure they don't block narrow paths or entrances
+                    if (this.isNarrowPath(x, y)) continue;
+
+                    // Generators (Rare, only in corners of rooms)
+                    if (inRoom && adjacentWalls >= 2 && Math.random() < 0.02) {
+                        this.map[y][x] = CONFIG.TILE.GENERATOR;
+                        continue;
+                    }
+
+                    // Boxes / Barrels (Scattered)
+                    const spawnChance = inRoom ? 0.05 : 0.01;
+                    if (Math.random() < spawnChance) {
+                        this.map[y][x] = Math.random() < 0.6 ? CONFIG.TILE.BOX : CONFIG.TILE.BARREL;
+                    }
+                }
+            }
+        }
+    }
+
+    isInsideAnyRoom(x, y) {
+        return this.rooms.some(room =>
+            x >= room.x1 && x < room.x2 &&
+            y >= room.y1 && y < room.y2
+        );
+    }
+
+    isNarrowPath(x, y) {
+        // Horizontal narrow path (wall above and below)
+        const vBlock = this.map[y - 1][x] === CONFIG.TILE.WALL && this.map[y + 1][x] === CONFIG.TILE.WALL;
+        // Vertical narrow path (wall left and right)
+        const hBlock = this.map[y][x - 1] === CONFIG.TILE.WALL && this.map[y][x + 1] === CONFIG.TILE.WALL;
+
+        return vBlock || hBlock;
+    }
+
+    countAdjacentWalls(x, y) {
+        let count = 0;
+        const neighbors = [
+            { dx: 0, dy: -1 }, { dx: 0, dy: 1 }, { dx: -1, dy: 0 }, { dx: 1, dy: 0 }
+        ];
+        for (const dir of neighbors) {
+            const nx = x + dir.dx;
+            const ny = y + dir.dy;
+            if (ny >= 0 && ny < CONFIG.MAP_HEIGHT && nx >= 0 && nx < CONFIG.MAP_WIDTH) {
+                if (this.map[ny][nx] === CONFIG.TILE.WALL) {
+                    count++;
+                }
+            }
+        }
+        return count;
     }
 }
 
