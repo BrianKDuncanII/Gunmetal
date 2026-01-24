@@ -93,7 +93,8 @@ export class LevelGenerator {
                                 { type: '9mm', amount: 12, weight: 0.4 },
                                 { type: 'shells', amount: 6, weight: 0.2 },
                                 { type: '7.62mm', amount: 20, weight: 0.3 },
-                                { type: 'rocket', amount: 2, weight: 0.1 }
+                                { type: 'rocket', amount: 2, weight: 0.1 },
+                                { type: 'grenade', amount: 1, weight: 0.1 }
                             ];
 
                             const totalWeight = ammoTypes.reduce((sum, item) => sum + item.weight, 0);

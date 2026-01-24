@@ -39,6 +39,9 @@ export class Renderer {
     }
 
     fullRender(player, visibleSet, exploredSet, reticle, enemyMap, pickupMap) {
+        // Clear previous AOE highlights
+        this.clearAOE();
+
         // Initial build if empty
         if (this.tileElements.length === 0) {
             this.container.innerHTML = "";
@@ -174,6 +177,28 @@ export class Renderer {
 
     updatePos(player) {
         this.posDisplay.innerText = `${player.x}, ${player.y}`;
+    }
+
+    renderAOE(centerX, centerY, radius) {
+        for (let dy = -radius; dy <= radius; dy++) {
+            for (let dx = -radius; dx <= radius; dx++) {
+                const tx = centerX + dx;
+                const ty = centerY + dy;
+
+                // Simple circular radius
+                const dSquared = dx * dx + dy * dy;
+                if (dSquared <= radius * radius) {
+                    if (this.tileElements[ty] && this.tileElements[ty][tx]) {
+                        this.tileElements[ty][tx].classList.add('aoe-highlight');
+                    }
+                }
+            }
+        }
+    }
+
+    clearAOE() {
+        const highlights = this.container.querySelectorAll('.aoe-highlight');
+        highlights.forEach(el => el.classList.remove('aoe-highlight'));
     }
 
     updateCamera(player, instant = false) {

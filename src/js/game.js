@@ -110,6 +110,12 @@ class Game {
 
     render(reticle = null) {
         this.renderer.fullRender(this.player, this.visible, this.explored, reticle, this.enemyMap, this.pickupMap);
+
+        // Highlight AOE if applicable
+        if (this.aiming && this.activeWeapon.AOE_RADIUS) {
+            this.renderer.renderAOE(this.reticle.x, this.reticle.y, this.activeWeapon.AOE_RADIUS);
+        }
+
         this.minimap.render(this.map, this.player, this.enemies, this.explored, this.visible);
     }
 
@@ -417,23 +423,16 @@ class Game {
             if (dist < 8) enemy.alerted = true; // Wake up if close
 
             // Ranged enemies: Try to attack from distance first
-            if (enemy.type === CONFIG.TILE.ENEMY_RANGED && enemy.alerted) {
-                if (dist <= CONFIG.ENEMY.RANGED_ATTACK_RANGE && dist > 1) {
-                    // Check line of sight
-                    if (this.hasLineOfSight(enemy.x, enemy.y, this.player.x, this.player.y)) {
-                        // Chance to shoot
-                        if (Math.random() < CONFIG.ENEMY.RANGED_ATTACK_CHANCE) {
-                            this.enemyRangedAttack(enemy);
-                            return; // End turn after shooting
-                        }
-                    }
-                }
-            }
+            // Ranged Attack Logic moved to Tactical AI block below
+
 
             let dx = 0;
             let dy = 0;
 
             if (enemy.alerted) {
+                const hasLoS = this.hasLineOfSight(enemy.x, enemy.y, this.player.x, this.player.y, true);
+                const inCover = this.getCoverStatus(enemy.x, enemy.y, this.player.x, this.player.y);
+
                 // Explicit Melee Attack Check
                 const distToPlayer = Math.abs(enemy.x - this.player.x) + Math.abs(enemy.y - this.player.y);
                 if (enemy.type === CONFIG.TILE.ENEMY_MELEE && distToPlayer <= 1) {
@@ -441,16 +440,60 @@ class Game {
                     return;
                 }
 
-                // Use A* pathfinding to navigate toward player
-                const nextStep = Pathfinding.getNextStep(
-                    enemy.x, enemy.y,
-                    this.player.x, this.player.y,
-                    this.map, this.enemyMap
-                );
+                // Ranged AI: Tactical
+                if (enemy.type === CONFIG.TILE.ENEMY_RANGED) {
 
-                if (nextStep) {
-                    dx = nextStep.dx;
-                    dy = nextStep.dy;
+                    // 1. If in cover and can shoot -> Shoot (High Chance)
+                    if (inCover && hasLoS && dist <= CONFIG.ENEMY.RANGED_ATTACK_RANGE) {
+                        if (Math.random() < 0.8) {
+                            this.enemyRangedAttack(enemy);
+                            return;
+                        } else if (Math.random() < 0.3) {
+                            // 30% chance (of the remaining 20%) to peep out
+                            // By not returning here, the AI falls through to the chase logic
+                            // which will move it out of cover.
+                        } else {
+                            return; // Stay in cover
+                        }
+                    }
+                    // 2. If exposed but can shoot -> Shoot (Medium Chance) or Move
+                    else if (hasLoS && dist <= CONFIG.ENEMY.RANGED_ATTACK_RANGE) {
+                        if (Math.random() < 0.4) {
+                            this.enemyRangedAttack(enemy);
+                            return;
+                        }
+                    }
+
+                    // 3. If not in cover, try to find cover
+                    if (!inCover) {
+                        const coverPos = this.findTacticalPosition(enemy);
+                        if (coverPos) {
+                            const step = Pathfinding.getNextStep(enemy.x, enemy.y, coverPos.x, coverPos.y, this.map, this.enemyMap);
+                            if (step) {
+                                dx = step.dx;
+                                dy = step.dy;
+                            }
+                        }
+                    }
+                }
+
+                // Default Chase (if no tactical move decided)
+                if (dx === 0 && dy === 0) {
+                    // IF we are in cover but can't see player, stay put sometimes for an ambush
+                    // But don't stay forever (lowered chance to 30% to prevent stalemates)
+                    if (inCover && !hasLoS && Math.random() < 0.3) {
+                        return; // Wait in cover
+                    }
+
+                    const nextStep = Pathfinding.getNextStep(
+                        enemy.x, enemy.y,
+                        this.player.x, this.player.y,
+                        this.map, this.enemyMap
+                    );
+                    if (nextStep) {
+                        dx = nextStep.dx;
+                        dy = nextStep.dy;
+                    }
                 }
             } else {
                 // Wander randomly when not alerted
@@ -501,10 +544,32 @@ class Game {
 
     /**
      * Check if there is clear line of sight between two points
+     * @param {number} x0 - Start X
+     * @param {number} y0 - Start Y
+     * @param {number} x1 - Target X
+     * @param {number} y1 - Target Y
+     * @param {boolean} allowPeek - If true, allow checking from adjacent peek tiles
      */
-    hasLineOfSight(x0, y0, x1, y1) {
+    hasLineOfSight(x0, y0, x1, y1, allowPeek = false) {
+        // Direct LoS
+        if (this.checkLine(x0, y0, x1, y1)) return true;
+
+        // Peek LoS
+        if (allowPeek) {
+            const peekSpots = this.getPeekNeighbors(x0, y0);
+            for (const spot of peekSpots) {
+                if (this.checkLine(spot.x, spot.y, x1, y1)) return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Internal helper to check direct line
+     */
+    checkLine(x0, y0, x1, y1) {
         const path = this.getLine(x0, y0, x1, y1);
-        // Skip first (enemy) and last (player) positions
+        // Skip first (source) and last (target) positions
         for (let i = 1; i < path.length - 1; i++) {
             const p = path[i];
             if (this.map[p.y][p.x] === CONFIG.TILE.WALL) {
@@ -512,6 +577,77 @@ class Game {
             }
         }
         return true;
+    }
+
+    /**
+     * Get valid peek neighbors (empty tiles adjacent to me AND a wall)
+     */
+    getPeekNeighbors(x, y) {
+        const spots = [];
+        const neighbors = [
+            { dx: 0, dy: -1 }, { dx: 0, dy: 1 }, { dx: -1, dy: 0 }, { dx: 1, dy: 0 }
+        ];
+
+        // Check each direction for a WALL
+        for (const dir of neighbors) {
+            const wx = x + dir.dx;
+            const wy = y + dir.dy;
+            if (!this.isWalkable(wx, wy)) { // It's a wall (or empty void)
+                // Check perpendiculars relative to this wall
+                // If wall is North (0, -1). Perp is East (1, 0) / West (-1, 0)
+                // We want to peek from (x+1, y) IF that spot is open.
+
+                // Simplified: Just iterate neighbors again. If neighbor is WALKABLE, add it.
+                // But we only peek if we are NEXT TO A WALL.
+                // Yes, this loop confirms we are next to a wall.
+                // So now gather walkable neighbors.
+
+                for (const peekDir of neighbors) {
+                    const px = x + peekDir.dx;
+                    const py = y + peekDir.dy;
+                    if (this.isWalkable(px, py)) {
+                        // Avoid duplicates
+                        if (!spots.some(s => s.x === px && s.y === py)) {
+                            spots.push({ x: px, y: py });
+                        }
+                    }
+                }
+            }
+        }
+        return spots;
+    }
+
+    getCoverStatus(targetX, targetY, sourceX, sourceY) {
+        // 1. Check if adjacent to any wall
+        const walls = [];
+        const neighbors = [
+            { dx: 0, dy: -1 }, { dx: 0, dy: 1 }, { dx: -1, dy: 0 }, { dx: 1, dy: 0 }
+        ];
+
+        for (const dir of neighbors) {
+            if (!this.isWalkable(targetX + dir.dx, targetY + dir.dy)) {
+                walls.push(dir);
+            }
+        }
+
+        if (walls.length === 0) return false;
+
+        // 2. Vector from Target to Source
+        const toSourceX = sourceX - targetX;
+        const toSourceY = sourceY - targetY;
+
+        // Normalize roughly (Manhattan is fine for sign check)
+
+        // 3. Check if any wall is roughly in the direction of the source
+        // Dot product: WallDir * ToSourceDir > 0
+        // WallDir is vector from Target to Wall. (dir.dx, dir.dy)
+
+        for (const wallDir of walls) {
+            const dot = wallDir.dx * toSourceX + wallDir.dy * toSourceY;
+            if (dot > 0) return true; // Wall is somewhat towards the enemy
+        }
+
+        return false;
     }
 
     /**
@@ -536,19 +672,26 @@ class Game {
      * Player takes damage from an enemy
      */
     playerTakeDamage(amount, sourceX, sourceY) {
-        this.player.hp -= amount;
+        const inCover = this.getCoverStatus(this.player.x, this.player.y, sourceX, sourceY);
+        let finalDamage = amount;
+
+        if (inCover) {
+            finalDamage = Math.floor(amount * 0.5); // 50% damage reduction
+            this.logger.info("Cover absorbed damage!");
+        }
+
+        this.player.hp -= finalDamage;
         this.soundManager.play('PLAYER_HIT');
 
-        // Spawn floating damage text at player position (with player damage styling)
-        this.damageText.spawn(this.player.x, this.player.y, amount, this.renderer.charW, this.renderer.charH, true);
-
-        // Show damage flash effect
-        this.showDamageFlash();
-
-        // Update HP display
-        this.updateHPDisplay();
+        // Spawn floating damage text
+        let color = inCover ? '#aaaaff' : null; // bluish for blocked?
+        this.damageText.spawn(this.player.x, this.player.y, finalDamage, this.renderer.charW, this.renderer.charH, true);
 
         console.log(`Player HP: ${this.player.hp}/${this.player.maxHp}`);
+
+        // Update UI
+        this.updateHPDisplay();
+        this.showDamageFlash();
 
         // Check for game over
         if (this.player.hp <= 0) {
@@ -699,7 +842,7 @@ class Game {
         for (const enemy of this.enemies) {
             if (!enemy.alive) continue;
 
-            // Check if enemy is visible
+            // Check if enemy is visible (including peek)
             const key = enemy.y * CONFIG.MAP_WIDTH + enemy.x;
             if (!this.visible.has(key)) continue;
 
@@ -832,7 +975,22 @@ class Game {
     }
 
     fireHitscan(targetX, targetY) {
-        const path = this.getLine(this.player.x, this.player.y, targetX, targetY);
+        // Determine BEST source position (Player or Peek Spot)
+        let source = { x: this.player.x, y: this.player.y };
+
+        // Try direct line
+        if (!this.checkLine(source.x, source.y, targetX, targetY)) {
+            // If blocked, check peek spots
+            const peekSpots = this.getPeekNeighbors(this.player.x, this.player.y);
+            for (const spot of peekSpots) {
+                if (this.checkLine(spot.x, spot.y, targetX, targetY)) {
+                    source = spot;
+                    break;
+                }
+            }
+        }
+
+        const path = this.getLine(source.x, source.y, targetX, targetY);
         path.shift(); // Remove start
 
         // Max range check
@@ -863,13 +1021,28 @@ class Game {
 
         // Render tracer
         if (hitPoint) {
-            this.drawTracer(this.player, hitPoint);
+            // Visualize ray from ACTUAL player pos for clarity, or from source?
+            // From source is more accurate to physics.
+            this.drawTracer(source, hitPoint);
         }
     }
 
     fireProjectile() {
-        // For rockets, we want to travel to the target and explode
-        const path = this.getLine(this.player.x, this.player.y, this.reticle.x, this.reticle.y);
+        // Determine BEST source position
+        let source = { x: this.player.x, y: this.player.y };
+
+        // Try direct line
+        if (!this.checkLine(source.x, source.y, this.reticle.x, this.reticle.y)) {
+            const peekSpots = this.getPeekNeighbors(this.player.x, this.player.y);
+            for (const spot of peekSpots) {
+                if (this.checkLine(spot.x, spot.y, this.reticle.x, this.reticle.y)) {
+                    source = spot;
+                    break;
+                }
+            }
+        }
+
+        const path = this.getLine(source.x, source.y, this.reticle.x, this.reticle.y);
         path.shift();
 
         // Find impact point (wall or enemy or max range)
@@ -886,7 +1059,7 @@ class Game {
         // Determine explosion center
         console.log(`Rocket impact at ${impact.x}, ${impact.y}`);
         this.explodeRocket(impact.x, impact.y);
-        this.drawTracer(this.player, impact, '#ffaa00');
+        this.drawTracer(source, impact, '#ffaa00');
     }
 
     explodeRocket(x, y) {
@@ -927,11 +1100,19 @@ class Game {
     }
 
     applyDamage(enemy, damage) {
-        console.log(`Hit Enemy! Type: ${enemy.type}, HP: ${enemy.hp} for ${damage}`);
-        this.damageText.spawn(enemy.x, enemy.y, damage, this.renderer.charW, this.renderer.charH);
+        const inCover = this.getCoverStatus(enemy.x, enemy.y, this.player.x, this.player.y);
+        let finalDamage = damage;
+
+        if (inCover) {
+            finalDamage = Math.floor(damage * 0.5);
+            this.showActionText("Cover!", enemy.x, enemy.y);
+        }
+
+        console.log(`Hit Enemy! Type: ${enemy.type}, HP: ${enemy.hp} for ${finalDamage}`);
+        this.damageText.spawn(enemy.x, enemy.y, finalDamage, this.renderer.charW, this.renderer.charH);
         this.soundManager.play('ENEMY_HIT');
 
-        const dead = enemy.takeDamage(damage);
+        const dead = enemy.takeDamage(finalDamage);
         if (dead) {
             console.log("Enemy Died!");
             this.logger.log("Enemy eliminated");
@@ -1003,10 +1184,20 @@ class Game {
 
         const radius = CONFIG.FOV_RADIUS;
 
-        // Recursive Shadowcasting
-        // Based on typical roguelike algorithms (Octants)
+        // Recursive Shadowcasting with Peeking
+
+        // 1. Cast from Player
         for (let octant = 0; octant < 8; octant++) {
             this.castLight(octant, 1, 1.0, 0.0, radius, startX, startY);
+        }
+
+        // 2. Cast from Peek Spots (if at corner)
+        const peekSpots = this.getPeekNeighbors(startX, startY);
+        for (const spot of peekSpots) {
+            // Visualize peek spots? Maybe separate color. For now just reveal.
+            for (let octant = 0; octant < 8; octant++) {
+                this.castLight(octant, 1, 1.0, 0.0, radius, spot.x, spot.y);
+            }
         }
     }
 
@@ -1074,6 +1265,39 @@ class Game {
             }
             if (blocked) break;
         }
+    }
+
+    /**
+     * Find a tactical position for ranged enemy (Cover + LoS)
+     */
+    findTacticalPosition(enemy) {
+        let bestPos = null;
+        let minDist = Infinity;
+        const scanRadius = 6;
+
+        for (let ry = -scanRadius; ry <= scanRadius; ry++) {
+            for (let rx = -scanRadius; rx <= scanRadius; rx++) {
+                const tx = enemy.x + rx;
+                const ty = enemy.y + ry;
+
+                if (!this.isWalkable(tx, ty)) continue;
+                if (this.enemyMap.has(ty * CONFIG.MAP_WIDTH + tx)) continue;
+
+                // Check Cover
+                if (this.getCoverStatus(tx, ty, this.player.x, this.player.y)) {
+                    // Check LoS (Peek allowed)
+                    if (this.hasLineOfSight(tx, ty, this.player.x, this.player.y, true)) {
+                        // Score by distance to enemy (minimize travel time)
+                        const d = Math.abs(rx) + Math.abs(ry);
+                        if (d < minDist) {
+                            minDist = d;
+                            bestPos = { x: tx, y: ty };
+                        }
+                    }
+                }
+            }
+        }
+        return bestPos;
     }
 
     blocksLight(x, y) {

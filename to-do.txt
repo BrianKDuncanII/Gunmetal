@@ -1,3 +1,5 @@
+Note: Please don't include these things in a response. I will handle that. These are not for LLMs.
+
 Things to change:
 2. Improve the current GUI for displaying stats. Remove the "position" text. And title for the game.
 

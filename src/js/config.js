@@ -71,10 +71,21 @@ export const CONFIG = {
             MAGAZINE_SIZE: 100,
             DAMAGE: 1,
             RANGE: 8,
-            BURST: 5, // Fires multiple shots per turn
+            BURST: 5,
             AMMO_TYPE: '7.62mm',
             DESCRIPTION: 'Lead rain.',
             TYPE: 'hitscan'
+        },
+        FRAG_GRENADE: {
+            NAME: 'Grenade',
+            MAGAZINE_SIZE: 1,
+            DAMAGE: 20,
+            AOE_DAMAGE: 15,
+            AOE_RADIUS: 3,
+            RANGE: 8,
+            AMMO_TYPE: 'grenade',
+            DESCRIPTION: 'Frag out.',
+            TYPE: 'projectile'
         },
         MELEE: {
             NAME: 'Combat Knife',
@@ -134,6 +145,7 @@ export const CONFIG = {
         AMMO_SHELLS: 's',
         AMMO_762: 'i',
         AMMO_ROCKET: 'r',
+        AMMO_GRENADE: 'g',
         // Weapons (generic char for now, or specific)
         WEAPON_DROP: 'W'
     }
