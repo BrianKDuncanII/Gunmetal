@@ -84,23 +84,55 @@ export class Renderer {
         this.renderTile(player.x, player.y, player);
     }
 
-    renderProjectileAnimation(path, callback) {
-        // Draw projectile chars along the path
-        path.forEach(p => {
-            if (this.tileElements[p.y] && this.tileElements[p.y][p.x]) {
-                const span = this.tileElements[p.y][p.x];
-                span.innerText = CONFIG.TILE.PROJECTILE;
-                span.classList.add('projectile'); // For styling (e.g. bright yellow)
-                span._text = CONFIG.TILE.PROJECTILE; // Update cache to avoid dirty check reverting it immediately if we were using a loop
-            }
-        });
-
-        // Clear after short delay
-        setTimeout(() => {
-            // We ideally want to revert to previous state.
-            // Simplest way is to just trigger a full re-render of the view.
+    renderProjectilePaths(paths, weaponType, callback) {
+        if (!paths || paths.length === 0) {
             if (callback) callback();
-        }, 100); // 100ms flash
+            return;
+        }
+
+        const isHitscan = weaponType === 'hitscan';
+        const frameDelay = isHitscan ? 15 : 40; // Bullets are much faster than rockets
+        const maxFrames = Math.max(...paths.map(p => p.length));
+        let frame = 0;
+
+        const animate = () => {
+            if (frame >= maxFrames) {
+                // Animation complete, clean up after a tiny linger
+                setTimeout(() => {
+                    if (callback) callback();
+                }, 50);
+                return;
+            }
+
+            paths.forEach(path => {
+                if (frame < path.length) {
+                    const p = path[frame];
+                    if (this.tileElements[p.y] && this.tileElements[p.y][p.x]) {
+                        const span = this.tileElements[p.y][p.x];
+
+                        // Briefly show projectile
+                        const oldText = span.innerText;
+                        const char = isHitscan ? '•' : CONFIG.TILE.PROJECTILE;
+                        span.innerText = char;
+                        span.classList.add('projectile');
+
+                        // For hitscan, we leave a brief trail? 
+                        // No, let's keep it clean. Revert after one frame.
+                        setTimeout(() => {
+                            if (span.innerText === char) {
+                                span.innerText = span._text || '.'; // Revert to cached floor/wall text
+                                span.classList.remove('projectile');
+                            }
+                        }, frameDelay * 1.5);
+                    }
+                }
+            });
+
+            frame++;
+            setTimeout(animate, frameDelay);
+        };
+
+        animate();
     }
 
     renderTile(x, y, player) {

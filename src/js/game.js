@@ -943,20 +943,12 @@ class Game {
 
     completePlayerAction() {
         if (this.pendingTracers.length > 0) {
-            // Flatten paths if needed or renderer handles list of paths?
-            // Renderer.renderProjectileAnimation handles a single path array.
-            // We need to merge them or update renderer.
-            // For now, let's just flatten all points into one "path" for the animation frame.
-            const allPoints = [].concat(...this.pendingTracers);
-
-            this.renderer.renderProjectileAnimation(allPoints, () => {
+            this.renderer.renderProjectilePaths(this.pendingTracers, this.activeWeapon.TYPE, () => {
                 this.pendingTracers = [];
-                this.render(this.aiming ? this.reticle : null); // Updates view removes tracers
-                // Enemy turn after player shoots
+                this.render(this.aiming ? this.reticle : null);
                 this.processTurn();
             });
         } else {
-            // Enemy turn immediately
             this.processTurn();
         }
     }

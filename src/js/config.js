@@ -119,6 +119,268 @@ export const CONFIG = {
             DESCRIPTION: 'Increases effective range.'
         }
     },
+    ASCII_ART: {
+        PISTOL: `
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                          YWX                                                                       
+                         VNIMLYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYPBDQZ                 
+                   UQSVMKKJKLKJJJJJJJJJJJJJJJFADDDDDDDCGJJJJJJJJJJJJJJJJJJJJJJJJJIJS                
+                  SJIHHM  UVRTVTUVURTUTP     SETXXXXXXOQ                         UMH                
+                  YNLOFW  OLHGFFLLJCLMHC       TSSSSSST                          SGH                
+                    ZJN   NMFGMHNLJEKMHC          YXY                        YGCCBJY                
+                   YNADEEECCBBCBCCBACCBAEEEEEEEEEEDDFEEEEEEEEEFGGGGGGGGGGGGGJEMLLGR                 
+                  OBAAAAAAAAKDAAAAAAAABAAAAAAABABBCDDECBBBBEHDABBCCCCCBBBBAACADDDBS                 
+                  YPHEDABBAAAAAAAAAAAAAAAAAAABACABCCCCCBAAAABGKJJJJJJJJJJJJJJPVVVVY                 
+                      ZUGAGAAAAADLNAAAAAAAAAEGAABT     XOAADX                                       
+                        XAAAAAAAAHEAAAAAACAAWYJACZ       AAS                                        
+                        UAAAAAAAAAAAAAABAFAAMYVEAEP     TCCW                                        
+                       XEFAAAAAAAAAAAAAAAAAAACLLDAELMLNFADP                                         
+                      XFFAAAAAAAAAAAAAAAHVZ TMLLLMNMMLMRT                                           
+                     YJAAAAAAAAAAAAAAAAIY                                                           
+                     OIEAAAAAAAAAAAAAAAQ                                                            
+                    RGAAAAAAAAAAAAAAAAF                                                             
+                   XFDAAAAAAAAAAAAAAAAW                                                             
+                   UAAAAAAAAAAAAAAAAAGY                                                             
+                   FEAAAAAKOIAAAAAAABT                                                              
+                   DEAAAAADHAAAAAAAAF                                                               
+                   HFAAAAAAAAAAAAAAAR                                                               
+                    TRGBAAAAAAAAAAAABX                                                              
+                      ZWWWWWWWWWWWWWWZ                                                              
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+
+        `,
+        SHOTGUN: `
+                   PJJJJJID                                       QCIBV              
+                             YUJJJJIIIIIHDJHIKKLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLKHDFCSY             
+                            QMKNNNMNNNNNNNNCHNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNKAOLLR            
+                           DBHLAAJMJAFAABAAAAABNNNNNNNNNNNNNNNNNNNNNNNNMMMMNOOONNNKAACAJ            
+                           AAAAAAAABAEDBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHT            
+                         XQBAAAAAAAAAAAAAAAAAAAAAAAAAAAABJJJJJJJJJJJJJJJJJBACHAAADJK                
+                 XXXXXXXQKPAAAAAAAAAAAAAAAAAAAAAAAAAAAAABGFFFFFFFFFFFFFFFGBABEAAACI                 
+               YNLLLLLLLMKAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAC                 
+               XARSSRDFGCAAAAAAAAAAAAGAAAAHHOWWWWWWWWICAAAAAAAAAAAAAAAAAAAAAAAAAACJ                 
+               XAAAAAAAAAAAAAAAAQEAAAHAFJA            USSSSSSSSSSSSSSSSSSSSSSSSSSV                  
+               XAAAAAAAAAAAAAENY NLKAAAAHY                                                          
+               XAAAAAAAAAAAACN    WTTTTTV                                                           
+               XAAAAAAAAAAAAS                                                                       
+               ZWHBAAAAAAAAAS                                                                       
+                  TQQQBAAAAQX                                 
+        `,
+        RIFLE: `
+       __________
+      |  ______  |
+      | |      | |
+      | |      | |
+      |_|______|_|__________
+        |      |            |
+        |______|____________|
+        `,
+        SNIPER: `
+      VTUUUUUUV      XBBEBD      XUUUUUZ                                
+                                  HJFIIJSSJFLJNGNNFJHIEOKIMIIFNIILMI                            YZ  
+                                  HACBBBBBBADBDADDBFCKBDCABACABBBBAF                         MHJHX  
+                                  IBBAAAAABGFCFBGGEADACEDDGBGAAAAAAIWWWWWWWWWWWWWWWWWWWWWWWWWKAAIW  
+                                   XKDAGEEHHHHGCFIJJKJJJCAAACGFFFGFGGGHHHHHHHHHHHGGGGGGGGGGGGAFHBK  
+                                WOKNIIIIIIIIIIKCFQQQQQQLIUKJJMMMKOPMLKMMKROOLJKKHABCCCCCCCCCCBAABM  
+                            YWWGQQKHAAAAAAAAAAAEGGGGGGHGICAAAAAHDEGBBCBBBLCCCAAAAAP          YQQT   
+        WTTTTTTTTSSSSSSU   QMOJKCAAAAGAAAAAAAAAAAAAAAAAABBAAAAABAAAAAABAAAAAAAAABPY                 
+  XPOOOMKOKKKKKKKJJJJQHEOPINOAAAAAAAAAAAAAAAAAAAAABAAKNNNNNNNNNNNNNNNNNNNNNNNNYYZ                   
+  FJILLNJAAAAAAAAAAABMLNMTTGAAAAAAAAJMESTKAAAAAAAACISY                                              
+  FHAAAAAAAAAAAAAAAAABDMMFAAAAAAGXXOKTMZ WJDDDINQWW                                                 
+  FAAAAAAAAAAAAAAAAAAAAAAAAAAAAJY   SMOOOOU                                                         
+  FACAAAAAAAAAAAAAAAAAAAAAAAAAJZ                                                                    
+  FAAAAAAAAABAAAAAAGHQQKDAAAAK                                                                      
+  FAAAAAAAAABDENQWWZ    XVVVVZ                                                                      
+  FAAAAAAELSV                                                                                       
+  UHHJRT
+        `,
+        ROCKET: `
+      UJHHS                                               
+                                              ZMCSCAAJY                                             
+                                             WKBSMBAAADV                                            
+                                            TFBRZCAAAAABR                                           
+                                           QEAM QAAAAAAAAMZ                                         
+                                          NCAHWWFBBAAAAAAAJZ                                        
+                                         PCAAW UAAAAAAAAAAAK                                        
+                                        VBAAN  IAAAAAAAAAAAAS                                       
+                                        LBADZ XAAAAAAAAAAAAAL                                       
+                                        KAAL  PAAAAAAAAAAAAAK                                       
+                                        KAAN  NAAAAAAAAAAAAAK                                       
+                                        KAAN  NAAAAAAAAAAAAAK                                       
+                                        KBCLUUKAABBAAAAAAAAAK                                       
+                                        KACO  REEDDDDDDAAAAAK                                       
+                                        KAAN  PAAAAAAAAAAAAAK                                       
+                                        KAAN  PAAAAAAAAAAAAAK                                       
+                                        KAAN  PAAAAAAAAAAAAAK                                       
+                                       OFAAN  PAAAAAAAAAAAAACHR                                     
+                                       KAAAN  PAAAAAAAAAAAAAAAL                                     
+                                       KAAAN  PAAAAAAAAAAAAAAAL                                     
+                                       KAAAN  PAAAAAAAAAAAAAAAL                                     
+                                       KAAAN  PAAAAAAAAAAAAAAAL                                     
+                                       KAAAN  PAAAAAAAAAAAAAAAL                                     
+                                       KAAAN  PAAAAAAAAAAAAAAAL                                     
+                                       KAAAN  PAAAAAAAAAAAAAAAL                                     
+                                       KAAAN  PAAAAAAAAAAAAAAAL                                     
+                                       KAAAN  PAAAAAABAAAAAAAAL                                     
+                                       KAAAM  PAAAAACAAAAAAAAAL                                     
+                                      WLAAAK  PAAAAADAAAAAAAAAK                                     
+                                     UJBAAAK  PAAAAABKAAAAAAAAAO                                    
+                                    RIAAAAAK  PAAAAAAKAAAAAAAAAAKZ                                  
+                                  ZOGAAAAAAK  PAAAAAAEFAAAAAAAAAAHY                                 
+                                  PHAAAAAAAK  PAAAAAAAJAAAAAAAAAAAM                                 
+                                  OFAAAAAAAK  PAAAAAAAJAAAAAAAAAAAL                                 
+                                  NEAAAAAAAK  PAAAAAAAHAAAAAAAAAAAK                                 
+                                  NFAAAAAAAK  OAAAAAAAHAAAAAAAAAAAJ                                 
+                                  NFAAAAAAAL  OAAAAAAAHAAAAAAAAAAAJ                                 
+                                  PFAAAAAACEIJFAAAAAAAHAAAAAAAAAAAJ                                 
+                                  PFAAACAAAKXXOCDCCBAAHAAAAAAAAAAAJ                                 
+                                  PFAACAAAAEKIGAAAAAAAHAAAAAAAAAAAJ                                 
+                                  PGBBAAAAADJJHAAAAAACHAAAAAFJJJJJQ                                 
+                                  WUTTTTPGAACCBBBAAAAAGAAAAHT                                       
+                                        LBDGIOJEDCCCCCAAAAAAF                                       
+                                        ZSOPTTQEDFFEDDDFHILPW
+        `,
+        GRENADE: `
+        ZWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW                                  
+                                 QENNNNNNNNNNNNNNNNNNNNNKBAAAAAAAAV                                 
+                             ZECCBGCCCCCCCCCCCCCCCCCCEDDBAAAAAAAAABMU                               
+                              DAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADK                              
+                               TIAEAAAAAAAAAAAAAAAAAAAAAAAAABEAAAAAAABPZ                            
+                                ZSDDCAAAAAAAAAAAAAAAAAACJKIHDNEKJJIHAAAX                            
+                                    YMAAAAAAAAAAAAAAABTQDAAAAAAAAAAFNKCT                            
+                                     SAAAAAAAAAAAAAABUEAAAAAAAAAAAAAAFRFS                           
+                                    WLAAAAAAAAAAAAAAXFAAAAAAAAAAAAAAAAJLAT                          
+                                    MGWWWWWVWOAAAAAAXFAAAGWWWWWWWFEAAAJKAS                          
+                                    NH       QAAAAAAXIAAAH         MAAIOEW                          
+                                   UJACCCCBHHEAAAAAAEUJAAFV        RAHSBH                           
+                                  JFMNAAAAC ODAAAAAAAEQRFBCL      QLLNDAH                           
+                                UAJVNAAAACK SIAAAAAAAAAALSSSKKKKLLPNEAAAH                           
+                               ZTAIGAAAAAGYXHAAAAAAAAAAAAABHHHKNNLOIAAAAH                           
+                              PNJAAAAAAAACKIAAAAAAAAAAAAAAAAAABPS  NAAAAH                           
+                              AUXAAAAAAAAH UAAAAAAAAAAAAAAAAAAAAK  NAAAAH                           
+                              ATYLABABAAAH UAAAAAAAAAAAAAAAAAAAAK  NAAAAH                           
+                              SJDDACAAAAABDDAAAAAAAAAAAAAAAAAAAJU  NAAAAH                           
+                              AMNAAABAAAAEOLAAAAAAAAAAAAAAAAAAAAK  NAAAAH                           
+                              AUXAAAAAAAAH UAAAAAAAAAAAAAAAAAAAAK  NAAAAH                           
+                              ATYNAMJAAAAH UAAAAAAAAAAAAAAAAAAAAJ  NAAAAH                           
+                              RGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKU  NAAAAH                           
+                              AQQAAAAAAAAFSOAAAAAAAAAAAAAAAAAAAAH  OAAAAH                           
+                              AUXAAAAAAAAH UAAAAAAAAAAAAAAAAAAAAH  PAAAAH                           
+                              DKJAAAAAAAAGVTNIAAAAAAAAAAAAAAAAACK  XTSRSU                           
+                              QFAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABR                                    
+                              FPUAAAAAAAAGXQAAAAAAAAAAAAAAAAAAAH                                    
+                              PLNOEAAAAAAH SAAAAAAAAAAAAAAAAAACP                                    
+                               YSDBAAAAAABEDAAAAAAAAAAAAAAAAARW                                     
+                                XPAAAAAAAAAAAAAAAAAAAAAAAAABN                                       
+                           YYZYW YXKDAAAAAAABAAAAAAAAAAAAAAACRVXWVPNUYYYX                           
+                           XYYYYYYZ UPPPPPPPPPPPPPPPPPPPPQQQRUXUSSVYYYYYV
+        `,
+        MINIGUN: `
+                               YZ                                                              
+                                  UJBIV         W                                                   
+                   ACJSZ          PBAAFGGGGGGGGGCI                                       WU         
+             XQPWYJEGGGJSZ      ZXNBAAAAAAAAAAAAAHNOJRTV      VTZ        UT       TU   WLHIT        
+     ZVKEDDDDEAAEBCDECCCCCCCCBBBCFADREIMNNKBABFANAS NNWKEEEEEEQVEEEEEEEEEQUEEEEEEETQEEECAX KKR      
+     UAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEJIHHHHHGAAAALAPPIOTGKKKKKGNSFKKKKJKKGOTGKJJJJFRNHKKJCRYCIT      
+     UAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAN      
+     UAAAAAAAAAAAAAAAAFGBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHS      
+      UIFFIPPPPPPJAAAALMBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABDDDDDDAADDDDDDDDDAADDDDDDDAADDDDCAAAEP      
+                 ZRAAAAAAABNDQPOOBAAAAAAAAAAAAAAACAAAMRU      TRZ        TSZ      RS    WRRSY       
+                 YIAAAAAABCVMT  XBDAAAAAAAAAAANTTXUTTZ                                              
+                YOAAAAAACULGIHHHFNSAAAAAAAAAAAS                                                     
+                OAAAAAACZ          TIHHHHHHHLSX                                                     
+                OAAAAABJ                                                                            
+                XOIHHHP
+        `,
+        MOD: `
+                        YRRRRRRRRRU                                             
+                                    YTTTTTTTFRWXXOBAAABOVTTTTT                                      
+                                 YRKNQSAAAAAX     PAAAABOTTSOMNKPV                                  
+                                 EVZ   OAAAB       AAABR    YPNLJDT                                 
+                                 C      TTWV       ZZYZ     UAAAAAS                                 
+                                 C                         WEAAAAAS                                 
+                         ZSJMGGGGI                         YDAAAHIHNOKR                             
+                         HQ  XWTY                           XQXYZ Z  YFKX                           
+                       ZKR           ZXXWNONNNKLLNNKKLLNY           WTUNCY                          
+                       SIZ         ROLILLRUSNNPTJFPSNBAAAIPY        HAAAAX                          
+                       YOGM    XQJMQX WWVPIHJRZ WSEFNSGAAAADK     SEAAAAWZ                          
+                         XA   VINZ         YNPIIO VAANXMAAAAAO    NAAAAAR                           
+                      YWWIP  XDR  WMGGNMHSZ  RBAAHIMCDGDAAAAAAR   UKABCCCNQWY                       
+                    SKJTTTY WDW  PCLOIAAAAHV YRAAABABAAAAAAAAAHY   YSW   ZNJLM                      
+                    ON      FR  PACLAAAENDACW ZMAAAAIBAAAAAAAAAQY       GBBBBC                      
+                    ON      F   KAAAAAQPKTFAU  SAAAAAAAAAAAAAAAAP       FAAAAC                      
+                    ON      F   KAAAAAAKFDAAU  QAAAAAAAAAAAAAAAAP       FAAAAC                      
+                    ON      FLZ SACTMDBBCAAKY YAAAAAAAAAAAAAAAAAP       FAAAAC                      
+                    ULLPPR  YAO  XKBJSRKFJTZ XBAAAAAAAAAAAAAAAAJV  XPPPLBAAAFO                      
+                      YXXEUZ XDKX  YYYYYYZ  PAAAAAAAAAAAAAAAAAAQ  SEAAAABQQ                         
+                         SDX  WHEPQY    ZQLDAAAAAAAAAAAAAAAAABK   WGAAAABU                          
+                       XLMX     TMIAAAAAAAAAAAAAAAAAAAAAAAAAAG     ZQLLLLJL                         
+                       SJ         WWWROKEAAAAAAAAAAAAAAAAAAAEV      PCCCCCF                         
+                       THX              ZREAAAAAAAAAAAAAABIPY     ZOAAAAAFP                         
+                        QIY ZYPLWY         UHCBAAAAAAADOPY ZQJMT  KAAAACR                           
+                         TKONGGFBC            YRRRRRTWZ    XQAABGGCGGGIW                            
+                                 A      XXXY       YXXY     SAAAAAJ                                 
+                                 C     YEAAF      ZLAAEY    XGAAAAJ                                 
+                                 IPY   HAAAF       FAAAN  XLBAAACLW                                 
+                                 ZSKOQLDBBBCP     ZFAAAFNODBBBBHW                                   
+                                            HQYYYPCAAAHR                                            
+                                            ZUQPOOOOOP
+        `,
+        AMMO: `
+      WUUUUUUUUUW            ZUUUUUUUZ                                   
+                              WLICBDDDAAAAADIOX      ZSIHACEDDAAHIR                                 
+                             PBACRW   SACLAAAACQ    YFABLRV  YNAAAAG                                
+                            NAAA    XOAAAAAAAAAAH  XAAAN    TDAAAAAAA                               
+                            LAAAUUUUNAAABAAAAAAAI  XAAAKUTTPFAAAAAAAA                               
+                           RGGJKNNNNNNKJJJJJGHIFGRYKAJJMNNNNNNJJKJHJAM                              
+                           KAAAF      FAAAAAAAAAAJXAAAAP      AAAAAAAA                              
+                           KAAAF      FAAAAAAAAAAJXAAAAP      AAAAAAAA                              
+                           KAAAF      FAAAAAAAAAAJXAAAAP   Y  AAAAAAAA                              
+                           KAFJM      MIIIGCDAAAAJXAAIIR   Y  IIBAABAA                              
+                           WJAAAADBAADAAAAAAAAAAHVZRAAAAAAAAAAAAAAAABT                              
+                           RGAFMRUVZXUMLLJJIGCACERYLACKORWTRRRJJJIBAAM                              
+                           KAAAF      FAAAAAAAAAAJXAAAAP      AAAAAAAA                              
+                           KAAAF      FAAAAAAAAAAJXAAAAP      AAAAAAAA                              
+                           KAAAF      FAAAAAAAAAAJZAAAAP      AAAAAAAA                              
+                           KAAAF      FAAAAAAAAAAJ AAAAP      AAAAAAAA                              
+                           KAAAF      FAAAAAAAAAAJ AAAAP      AAAAAAAA                              
+                           KAAAF      FAAAAAAAAAAJ AAAAP      AAAAAAAA                              
+                           KAAAF      FAAAAAAAAAAJYAAAAP      AAAAAAAA                              
+                           KAAAF      FAAAAAAAAAAJZAAAAP      AAAAAAAA                              
+                           KAAAF      FAAAAAAAAAAJ AAAAP      AAAAAAAA                              
+                           KAAAF      FAAAAAAAAAAJ AAAAP      AAAAAAAA                              
+                           KAAAF      FAAAAAAAAAAJ AAAAP      AAAAAAAA                              
+                           KAAAF      FAAAAAAAAAAJYAAAAP      AAAAAAAA                              
+                           ODFKLOOOOOOJJJIGAAAAACOZHAKIMOOOOOOIICAAAAH                              
+                           WJACGGGGGGGFFFFFFCAAAGVZRAAEGGGGGGGFFFEAABT                              
+                           KACJIOOOOOOKMICCCBAAAAJXAAHGKNOONNMCCAAAAAA                              
+                           TPPQQQQQQQQQQQQQQPPPPPTYPQQQQQQQQQQQPPQQQQQ
+        `
+    },
     AUDIO: {
         MUSIC: {
             MAIN_THEME: 'resources/audio/music/main_theme.ogg'

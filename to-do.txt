@@ -15,7 +15,6 @@ Things to implement:
 12. Add debris that spawns when bullets hit walls.
 13. Improve the visuals of the game. (Add more color, better lighting, etc.)
 14. Add a shop system where the player can buy items and upgrades.
-15. Animate the bullets firing so gunplay feels more impactful and exciting.
 16. There should be a way to cancel firing mode, probably by using 'escape' or something similar.
 17. Look function with the 'L' key that allows you to look around and get info for tiles.
 18. Add randomized spread for weapons, so they sometimes will miss enemies depending on the range from the enemy and the accuracy of the weapon.

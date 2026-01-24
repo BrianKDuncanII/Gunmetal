@@ -1,4 +1,5 @@
 import { SoundManager } from './sound-manager.js';
+import { CONFIG } from '../config.js';
 
 export class Inventory {
     constructor() {
@@ -233,6 +234,24 @@ export class Inventory {
         console.log(`Attached ${mod.name} to ${weapon.name || weapon.NAME}`);
     }
 
+    getItemArt(item) {
+        const name = (item.name || item.NAME || "").toUpperCase();
+        if (name.includes('PISTOL')) return CONFIG.ASCII_ART.PISTOL;
+        if (name.includes('SHOTGUN')) return CONFIG.ASCII_ART.SHOTGUN;
+        if (name.includes('ASSERT') || name.includes('RIFLE')) {
+            if (name.includes('SNIPER')) return CONFIG.ASCII_ART.SNIPER;
+            return CONFIG.ASCII_ART.RIFLE;
+        }
+        if (name.includes('ROCKET')) return CONFIG.ASCII_ART.ROCKET;
+        if (name.includes('GRENADE')) return CONFIG.ASCII_ART.GRENADE;
+        if (name.includes('MINIGUN')) return CONFIG.ASCII_ART.MINIGUN;
+
+        if (item.type === 'mod') return CONFIG.ASCII_ART.MOD;
+        if (item.type === 'ammo') return CONFIG.ASCII_ART.AMMO;
+
+        return null;
+    }
+
     getItemInfo(item) {
         // Build info string based on item properties
         const info = [];
@@ -337,6 +356,19 @@ export class Inventory {
             this.items[this.selectedIndex];
 
         if (activeItem) {
+            // ASCII Art Section
+            const art = this.getItemArt(activeItem);
+            if (art) {
+                const artEl = document.createElement('pre');
+                artEl.className = 'item-art';
+                artEl.innerText = art.trim();
+                infoSection.appendChild(artEl);
+
+                const artSpacer = document.createElement('div');
+                artSpacer.className = 'info-spacer';
+                infoSection.appendChild(artSpacer);
+            }
+
             const infoLines = this.getItemInfo(activeItem);
 
             infoLines.forEach(line => {
