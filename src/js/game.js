@@ -780,42 +780,31 @@ class Game {
         // Helper to reset inventory state
         this.inventory.items = [];
         this.inventory.addItem({ name: '9mm Ammo', type: 'ammo', ammoType: '9mm', amount: 12 });
+        // Restore starting weapon
+        this.activeWeapon = CONFIG.WEAPON.PISTOL;
+        this.inventory.addItem({ ...this.activeWeapon, type: 'weapon' });
+
         this.inventory.render();
         this.inventory.updateAmmoUI();
     }
 
     restartGame() {
+        console.log("Restarting game...");
         this.hideGameOver();
         this.gameOver = false;
 
-        // Reset Logic - reusing instance
+        // Reset Logic
         this.player.hp = CONFIG.PLAYER.START_HP;
         this.experience.reset();
         this.floorLevel = 1;
         this.resetInventory();
 
-        this.init();
-    }
+        // Reset magazine for the pistol
+        this.currentMagazine = this.activeWeapon.MAGAZINE_SIZE;
 
-    /**
-     * Hide the game over screen
-     */
-    hideGameOver() {
-        const overlay = document.getElementById('game-over-overlay');
-        if (overlay) {
-            overlay.classList.add('hidden');
-        }
-    }
-
-    /**
-     * Restart the game from floor 1
-     */
-    restartGame() {
-        this.floorLevel = 1;
-        this.currentMagazine = this.activeWeapon.MAGAZINE_SIZE; // Reset magazine
         this.init();
         this.updateHPDisplay();
-        console.log("Game restarted!");
+        this.updateAmmoDisplay();
     }
 
     toggleAim() {
