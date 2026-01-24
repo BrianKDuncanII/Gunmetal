@@ -297,6 +297,11 @@ class Game {
 
                 this.showActionText(`Got ${pickup.NAME}!`, this.player.x, this.player.y);
                 this.logger.loot(`Picked up ${pickup.NAME}`);
+            } else if (pickup.type === 'mod') {
+                this.inventory.addItem(pickup);
+                this.soundManager.play('UI_EQUIP');
+                this.showActionText(`Got ${pickup.name}!`, this.player.x, this.player.y);
+                this.logger.loot(`Found ${pickup.name} mod`);
             } else {
                 this.inventory.addAmmo(pickup.ammoType, pickup.amount);
                 this.soundManager.play('PICKUP_AMMO');
@@ -320,8 +325,8 @@ class Game {
      */
     equipWeapon(weapon) {
         this.activeWeapon = weapon;
-        this.currentMagazine = weapon.MAGAZINE_SIZE;
-        // If picking up a weapon, start full? Or separate mechanic. For now start full.
+        const stats = this.getEffectiveStats();
+        this.currentMagazine = stats.magazineSize;
         this.updateAmmoDisplay();
     }
 
@@ -338,7 +343,8 @@ class Game {
         }
 
         // Calculate how many rounds we need
-        const roundsNeeded = this.activeWeapon.MAGAZINE_SIZE - this.currentMagazine;
+        const stats = this.getEffectiveStats();
+        const roundsNeeded = stats.magazineSize - this.currentMagazine;
         const ammoType = this.activeWeapon.AMMO_TYPE;
         const reserveAmmo = this.inventory.getAmmo(ammoType);
 
@@ -357,7 +363,7 @@ class Game {
         // Add to magazine
         this.currentMagazine += roundsToLoad;
 
-        console.log(`Reloaded ${roundsToLoad} rounds! Magazine: ${this.currentMagazine}/${this.activeWeapon.MAGAZINE_SIZE}`);
+        console.log(`Reloaded ${roundsToLoad} rounds! Magazine: ${this.currentMagazine}/${stats.magazineSize}`);
 
         // Show floating "Reload!" text
         this.showActionText("Reload!", this.player.x, this.player.y);
@@ -870,6 +876,26 @@ class Game {
         }
     }
 
+    getEffectiveStats() {
+        const weapon = this.activeWeapon;
+        const mods = weapon.mods || [];
+
+        let damage = weapon.DAMAGE || 0;
+        let range = weapon.RANGE || 0;
+        let spread = weapon.SPREAD || 0;
+        let magazineSize = weapon.MAGAZINE_SIZE || 0;
+        let pellets = weapon.PELLETS || 1;
+
+        mods.forEach(mod => {
+            if (mod.DAMAGE_BONUS) damage += mod.DAMAGE_BONUS;
+            if (mod.RANGE_BONUS) range += mod.RANGE_BONUS;
+            if (mod.SPREAD_MULT) spread *= mod.SPREAD_MULT;
+            if (mod.MAG_MULT) magazineSize = Math.ceil(magazineSize * mod.MAG_MULT);
+        });
+
+        return { damage, range, spread, magazineSize, pellets };
+    }
+
     fireWeapon() {
         // Special case for melee
         if (this.activeWeapon.TYPE === 'melee') {
@@ -897,12 +923,12 @@ class Game {
         const py = this.player.y * this.renderer.charH + this.renderer.charH / 2;
         this.particleSystem.spawnShell(px, py);
 
+        const stats = this.getEffectiveStats();
+
         // Handle weapon types
         if (this.activeWeapon.TYPE === 'hitscan') {
-            // Handle multiple projectiles (SHOTGUN)
-            const pellets = this.activeWeapon.PELLETS || 1;
-            const spread = this.activeWeapon.SPREAD || 0;
-            const burst = this.activeWeapon.BURST || 1;
+            const pellets = stats.pellets;
+            const spread = stats.spread;
 
             for (let i = 0; i < pellets; i++) {
                 // For spread, we slightly offset the target
@@ -915,7 +941,7 @@ class Game {
                     targetY += (Math.random() - 0.5) * spread * 10;
                 }
 
-                this.fireHitscan(Math.round(targetX), Math.round(targetY));
+                this.fireHitscan(Math.round(targetX), Math.round(targetY), stats);
             }
 
         } else if (this.activeWeapon.TYPE === 'projectile') {
@@ -964,10 +990,11 @@ class Game {
         // Show visual
         this.damageText.spawn(tx, ty, "SLASH", this.renderer.charW, this.renderer.charH, '#ffffff');
 
+        const stats = this.getEffectiveStats();
         const key = ty * CONFIG.MAP_WIDTH + tx;
         const enemy = this.enemyMap.get(key);
         if (enemy) {
-            const damage = this.activeWeapon.DAMAGE;
+            const damage = stats.damage;
             this.applyDamage(enemy, damage);
         } else if (this.map[ty][tx] === CONFIG.TILE.BOX) {
             this.breakObject(tx, ty);
@@ -976,13 +1003,14 @@ class Game {
         this.completePlayerAction();
     }
 
-    fireHitscan(targetX, targetY) {
+    fireHitscan(targetX, targetY, stats = null) {
+        if (!stats) stats = this.getEffectiveStats();
+
         // Determine BEST source position (Player or Peek Spot)
         let source = { x: this.player.x, y: this.player.y };
 
-        // Try direct line
+        // ... (peek logic same)
         if (!this.checkLine(source.x, source.y, targetX, targetY)) {
-            // If blocked, check peek spots
             const peekSpots = this.getPeekNeighbors(this.player.x, this.player.y);
             for (const spot of peekSpots) {
                 if (this.checkLine(spot.x, spot.y, targetX, targetY)) {
@@ -996,7 +1024,7 @@ class Game {
         path.shift(); // Remove start
 
         // Max range check
-        const maxRange = this.activeWeapon.RANGE;
+        const maxRange = stats.range;
         if (path.length > maxRange) {
             path.splice(maxRange);
         }
@@ -1010,7 +1038,7 @@ class Game {
             const key = p.y * CONFIG.MAP_WIDTH + p.x;
             const enemy = this.enemyMap.get(key);
             if (enemy) {
-                const damage = this.activeWeapon.DAMAGE;
+                const damage = stats.damage;
                 this.applyDamage(enemy, damage);
                 break; // Stop raycast
             }
@@ -1068,10 +1096,11 @@ class Game {
         this.drawTracer(source, impact, '#ffaa00');
     }
 
-    explodeRocket(x, y) {
+    explodeRocket(x, y, stats = null) {
+        if (!stats) stats = this.getEffectiveStats();
         const radius = this.activeWeapon.AOE_RADIUS || 2;
-        const centerDamage = this.activeWeapon.DAMAGE;
-        const aoeDamage = this.activeWeapon.AOE_DAMAGE;
+        const centerDamage = stats.damage;
+        const aoeDamage = this.activeWeapon.AOE_DAMAGE || Math.floor(centerDamage * 0.5);
 
         // Visual for explosion
         this.showActionText("BOOM!", x, y);

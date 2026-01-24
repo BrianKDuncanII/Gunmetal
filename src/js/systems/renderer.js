@@ -120,8 +120,22 @@ export class Renderer {
             newClassName = enemy.type === CONFIG.TILE.ENEMY_MELEE ? 'enemy-melee' : 'enemy-ranged';
             newText = enemy.type;
         } else if (pickup) {
-            newClassName = 'pickup-ammo';
-            newText = CONFIG.TILE.AMMO_9MM;
+            newClassName = pickup.type === 'weapon' ? 'pickup-weapon' : (pickup.type === 'mod' ? 'pickup-mod' : 'pickup-ammo');
+
+            // Map ammo types to their tiles
+            if (pickup.type === 'mod') {
+                newText = CONFIG.TILE.MOD_DROP;
+            } else if (pickup.type === 'weapon') {
+                newText = CONFIG.TILE.WEAPON_DROP;
+            } else {
+                switch (pickup.ammoType) {
+                    case 'shells': newText = CONFIG.TILE.AMMO_SHELLS; break;
+                    case '7.62mm': newText = CONFIG.TILE.AMMO_762; break;
+                    case 'rocket': newText = CONFIG.TILE.AMMO_ROCKET; break;
+                    case 'grenade': newText = CONFIG.TILE.AMMO_GRENADE; break;
+                    default: newText = CONFIG.TILE.AMMO_9MM;
+                }
+            }
         } else if (!isExplored && !isVisible) {
             newClassName = 'empty';
             newText = ' ';

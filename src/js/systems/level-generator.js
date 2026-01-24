@@ -118,6 +118,21 @@ export class LevelGenerator {
             }
         }
 
+        // Spawn mods (Rarely)
+        for (let i = 0; i < this.rooms.length; i++) {
+            const room = this.rooms[i];
+            if (Math.random() < 0.15) {
+                const mx = Math.floor(Math.random() * (room.w - 2)) + room.x1 + 1;
+                const my = Math.floor(Math.random() * (room.h - 2)) + room.y1 + 1;
+                if (this.map[my][mx] === CONFIG.TILE.FLOOR) {
+                    const modKeys = Object.keys(CONFIG.MOD);
+                    const selectedKey = modKeys[Math.floor(Math.random() * modKeys.length)];
+                    const selectedMod = CONFIG.MOD[selectedKey];
+                    pickups.push({ x: mx, y: my, type: 'mod', name: selectedMod.NAME, ...selectedMod });
+                }
+            }
+        }
+
         this.generateWalls();
         this.spawnEnvironmentObjects();
 

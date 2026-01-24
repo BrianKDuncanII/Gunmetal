@@ -96,7 +96,16 @@ export class Inventory {
 
     addItem(item) {
         // Ensure item has proper structure
-        const normalizedItem = typeof item === 'string' ? { name: item, type: 'misc' } : item;
+        const normalizedItem = typeof item === 'string' ? { name: item, type: 'misc' } : { ...item };
+
+        // Assign unique ID
+        normalizedItem.id = Date.now() + Math.random().toString(36).substr(2, 9);
+
+        // Initialize mods array for weapons
+        if (normalizedItem.type === 'weapon' || normalizedItem.damage) {
+            normalizedItem.mods = normalizedItem.mods || [];
+        }
+
         this.items.push(normalizedItem);
         this.render();
     }
@@ -128,6 +137,12 @@ export class Inventory {
     handleKeydown(e) {
         if (!this.isOpen) return;
 
+        // Sub-mode for weapon selection (when using a mod)
+        if (this.isSelectingWeapon) {
+            this.handleWeaponSelectionInput(e);
+            return;
+        }
+
         switch (e.key) {
             case 'ArrowUp':
                 e.preventDefault();
@@ -146,14 +161,76 @@ export class Inventory {
                 if (this.items[this.selectedIndex]) {
                     const item = this.items[this.selectedIndex];
                     this.soundManager.play('UI_EQUIP');
-                    if ((item.type === 'weapon' || item.damage) && this.onEquip) {
+
+                    if (item.type === 'mod') {
+                        // Mod usage: show weapon selection
+                        this.startWeaponSelection(item);
+                    } else if ((item.type === 'weapon' || item.damage) && this.onEquip) {
                         this.onEquip(item);
-                        // Optional: close inventory?
                         this.toggle();
                     }
                 }
                 break;
         }
+    }
+
+    startWeaponSelection(mod) {
+        // Find all weapons
+        this.eligibleWeapons = this.items.filter(i => i.type === 'weapon' || i.damage);
+
+        if (this.eligibleWeapons.length === 0) {
+            this.soundManager.play('DRY_FIRE');
+            return;
+        }
+
+        this.isSelectingWeapon = true;
+        this.selectedWeaponIndex = 0;
+        this.pendingMod = mod;
+        this.render();
+    }
+
+    handleWeaponSelectionInput(e) {
+        switch (e.key) {
+            case 'ArrowUp':
+                this.selectedWeaponIndex = Math.max(0, this.selectedWeaponIndex - 1);
+                this.soundManager.play('UI_NAV');
+                this.render();
+                break;
+            case 'ArrowDown':
+                this.selectedWeaponIndex = Math.min(this.eligibleWeapons.length - 1, this.selectedWeaponIndex + 1);
+                this.soundManager.play('UI_NAV');
+                this.render();
+                break;
+            case 'Enter':
+                const weapon = this.eligibleWeapons[this.selectedWeaponIndex];
+                this.attachModToWeapon(weapon, this.pendingMod);
+                this.isSelectingWeapon = false;
+                this.pendingMod = null;
+                this.render();
+                break;
+            case 'Escape':
+                this.isSelectingWeapon = false;
+                this.pendingMod = null;
+                this.render();
+                break;
+        }
+    }
+
+    attachModToWeapon(weapon, mod) {
+        // Move mod into weapon
+        weapon.mods.push(mod);
+
+        // Remove mod from main inventory
+        const modIdx = this.items.indexOf(mod);
+        if (modIdx > -1) this.items.splice(modIdx, 1);
+
+        // Adjust selected index if it was at the end
+        if (this.selectedIndex >= this.items.length) {
+            this.selectedIndex = Math.max(0, this.items.length - 1);
+        }
+
+        this.soundManager.play('UI_EQUIP');
+        console.log(`Attached ${mod.name} to ${weapon.name || weapon.NAME}`);
     }
 
     getItemInfo(item) {
@@ -167,43 +244,39 @@ export class Inventory {
         info.push(`Type: ${type.charAt(0).toUpperCase() + type.slice(1)}`);
 
         // Weapon stats
-        if (item.damage !== undefined) {
-            // Handle shotgun pellets
+        if (item.damage !== undefined || item.DAMAGE !== undefined) {
+            // Include MOD bonuses in view? 
+            // Or show base + mods separately for clarity.
+            const baseDamage = item.DAMAGE || item.damage;
+            const damageBonus = (item.mods || []).reduce((sum, m) => sum + (m.DAMAGE_BONUS || 0), 0);
+
             if (item.PELLETS) {
-                info.push(`Damage: ${item.DAMAGE}x${item.PELLETS}`);
+                info.push(`Damage: ${baseDamage}${damageBonus > 0 ? ` (+${damageBonus})` : ''}x${item.PELLETS}`);
             } else {
-                info.push(`Damage: ${item.DAMAGE || item.damage}`);
+                info.push(`Damage: ${baseDamage}${damageBonus > 0 ? ` (+${damageBonus})` : ''}`);
             }
         }
+
         if (item.RANGE || item.range !== undefined) {
-            info.push(`Range: ${item.RANGE || item.range}`);
+            const baseRange = item.RANGE || item.range;
+            const rangeBonus = (item.mods || []).reduce((sum, m) => sum + (m.RANGE_BONUS || 0), 0);
+            info.push(`Range: ${baseRange}${rangeBonus > 0 ? ` (+${rangeBonus})` : ''}`);
         }
+
         if (item.MAGAZINE_SIZE !== undefined) {
             info.push(`Mag: ${item.MAGAZINE_SIZE}`);
         }
-        if (item.AMMO_TYPE) {
-            info.push(`Ammo: ${item.AMMO_TYPE}`);
-        }
 
-        // Ammo item stats
-        if (item.type === 'ammo' && item.amount !== undefined) {
-            info.push(`Rounds: ${item.amount}`);
-        }
-
-        // Armor stats
-        if (item.defense !== undefined) {
-            info.push(`Defense: ${item.defense}`);
-        }
-
-        // Consumable stats
-        if (item.heal !== undefined) {
-            info.push(`Heals: ${item.heal} HP`);
+        if (item.mods && item.mods.length > 0) {
+            info.push('');
+            info.push('MODS:');
+            item.mods.forEach(m => info.push(`- ${m.name || m.NAME}`));
         }
 
         // Description
-        if (item.description) {
+        if (item.description || item.DESCRIPTION) {
             info.push('');
-            info.push(item.description);
+            info.push(item.description || item.DESCRIPTION);
         }
 
         return info;
@@ -221,10 +294,12 @@ export class Inventory {
         listSection.className = 'inventory-list-section';
 
         const header = document.createElement('h2');
-        header.innerText = 'INVENTORY';
+        header.innerText = this.isSelectingWeapon ? 'SELECT WEAPON' : 'INVENTORY';
         listSection.appendChild(header);
 
-        if (this.items.length === 0) {
+        const currentList = this.isSelectingWeapon ? this.eligibleWeapons : this.items;
+
+        if (currentList.length === 0) {
             const emptyMsg = document.createElement('div');
             emptyMsg.className = 'inventory-empty';
             emptyMsg.innerText = '[ NO ITEMS ]';
@@ -233,10 +308,12 @@ export class Inventory {
             const list = document.createElement('ul');
             list.className = 'inventory-list';
 
-            this.items.forEach((item, index) => {
+            currentList.forEach((item, index) => {
                 const li = document.createElement('li');
                 li.innerText = item.name || item.NAME || item;
-                if (index === this.selectedIndex) {
+
+                const activeIdx = this.isSelectingWeapon ? this.selectedWeaponIndex : this.selectedIndex;
+                if (index === activeIdx) {
                     li.classList.add('selected');
                 }
                 list.appendChild(li);
@@ -255,9 +332,12 @@ export class Inventory {
         infoHeader.innerText = 'ITEM INFO';
         infoSection.appendChild(infoHeader);
 
-        if (this.items.length > 0 && this.items[this.selectedIndex]) {
-            const selectedItem = this.items[this.selectedIndex];
-            const infoLines = this.getItemInfo(selectedItem);
+        const activeItem = this.isSelectingWeapon ?
+            this.eligibleWeapons[this.selectedWeaponIndex] :
+            this.items[this.selectedIndex];
+
+        if (activeItem) {
+            const infoLines = this.getItemInfo(activeItem);
 
             infoLines.forEach(line => {
                 const p = document.createElement('p');
@@ -265,11 +345,6 @@ export class Inventory {
                 if (line === '') p.className = 'info-spacer';
                 infoSection.appendChild(p);
             });
-        } else {
-            const noItem = document.createElement('p');
-            noItem.className = 'no-item-selected';
-            noItem.innerText = 'No item selected';
-            infoSection.appendChild(noItem);
         }
 
         layout.appendChild(infoSection);
@@ -278,7 +353,11 @@ export class Inventory {
         // Controls hint
         const hint = document.createElement('div');
         hint.className = 'inventory-hint';
-        hint.innerText = '↑/↓ Navigate | Enter Equip | I Close';
+        if (this.isSelectingWeapon) {
+            hint.innerText = '↑/↓ Choose Weapon | Enter Attach | Esc Cancel';
+        } else {
+            hint.innerText = '↑/↓ Navigate | Enter Use/Equip | I Close';
+        }
         this.container.appendChild(hint);
     }
 }

@@ -1,0 +1,6 @@
+- Level & XP system
+- A variety of weapons with different stats
+- Ranged and Melee enemies
+- Randomly generated rooms and environment assets
+- ASCII art
+- Weapon modification and attachment system

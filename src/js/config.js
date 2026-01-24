@@ -97,6 +97,28 @@ export const CONFIG = {
             TYPE: 'melee'
         }
     },
+    MOD: {
+        LASER_SIGHT: {
+            NAME: 'Laser Sight',
+            SPREAD_MULT: 0.5,
+            DESCRIPTION: 'Greatly reduces weapon spread.'
+        },
+        EXTENDED_MAG: {
+            NAME: 'Extended Mag',
+            MAG_MULT: 1.5,
+            DESCRIPTION: 'Increases magazine capacity.'
+        },
+        HEAVY_BARREL: {
+            NAME: 'Heavy Barrel',
+            DAMAGE_BONUS: 2,
+            DESCRIPTION: 'Increases damage per shot.'
+        },
+        ACOG_SCOPE: {
+            NAME: 'ACOG Scope',
+            RANGE_BONUS: 5,
+            DESCRIPTION: 'Increases effective range.'
+        }
+    },
     AUDIO: {
         MUSIC: {
             MAIN_THEME: 'resources/audio/music/main_theme.ogg'
@@ -153,6 +175,7 @@ export const CONFIG = {
         PIPE_V: '|',
         PIPE_H: '-',
         // Weapons (generic char for now, or specific)
-        WEAPON_DROP: 'W'
+        WEAPON_DROP: 'W',
+        MOD_DROP: 'm'
     }
 };
